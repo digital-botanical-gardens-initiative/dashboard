@@ -1,7 +1,8 @@
+import dash
 from dash import Dash, html, dcc, Input, Output
 import plotly.express as px
 import pandas as pd
-import vaex
+
 
 
 # assume you have a "long-form" data frame
@@ -9,7 +10,7 @@ import vaex
 import molplotly
 
 # load a DataFrame with smiles
-df = pd.read_csv("/home/mwannier/dbgi_dashboard/data/230106_frozen_metadata.csv",nrows=1000)
+df = pd.read_csv("/home/mwannier/dashboard/data/230106_frozen_metadata.csv")
 df['y_pred'] = df['structure_xlogp']
 df['y_true'] = df['structure_exact_mass']
 #print(df)
@@ -25,4 +26,7 @@ jupyterFig = molplotly.add_molecules(fig=fig,
                             )
 
 layout = jupyterFig.layout
+
+
+dash.register_page(' Page 1', path='/page-1', layout=layout, icon="bi bi-arrow-through-heart-fill")
 

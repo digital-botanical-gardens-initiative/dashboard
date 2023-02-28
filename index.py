@@ -1,33 +1,92 @@
-from dash import html, dcc, Input, Output
+import dash
+from dash import dcc, html, Output, Input, State
+import dash_labs as dl
+import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
+from src import molplotly_layout, mol_visu,  piechart_layout, home, smiles_visu
 
-# Connect to main app.py file
-from app import app, server
+from application import app
 
-# Connect to your app pages
-from src import piechart_layout, molplotly_layout
+home = ['Home']
+    
+sidebar = dbc.Nav(
+    [
+        dbc.NavLink(
+            [
+                html.Div([
+                    html.I(className='bi bi-house'),
+                    ' Home'
+                ], className="ms-2"),
+            ],
+            href='/',
+            active="exact",
+        ),
+        dmc.Accordion(
+        dmc.AccordionItem(
+            [
+            dbc.NavLink(
+                [
+                    html.Div([
+                        html.I(className=page["icon"]),
+                        page["name"]
+                    ], className="ms-2"),
+                ],
+                href=page["path"],
+                active="exact",
+            )
+            for page in dash.page_registry.values() if page['name'] not in home
+
+            ], label='Pages')
+        )
+    ],
+    vertical=True,
+    pills=True,
+    className="bg-light"
+)
 
 
-app.layout = html.Div([
-    dcc.Location(id='url', refresh=False),
+
+app.layout = dbc.Container([
+    dcc.Location(id="url"),
+    dbc.Offcanvas([
+        sidebar,
+    ],
+        id="offcanvas",
+        title="Welcome to .../",
+        is_open=False,
+    ),
     html.Div([
-        dcc.Link('Page 1|', href='/src/molplotly_layout'),
-        dcc.Link('Page 2', href='/src/piechart_layout'),
-    ], className="row"),
-    html.Div(id='page-content', children=[
-        html.H1("Digital Botanical Garden Initiative")
-    ])
-])
+        dbc.Button(html.I(className="bi bi-list-ul"),  # "Menu",
+                   id="open-offcanvas", n_clicks=0),
+    ]),
+
+    dbc.Row([
+        dbc.Col(html.Div("DBGI",
+                         style={'fontSize': 50, 'textAlign': 'center'}))
+    ]),
+
+    html.Hr(),
+
+    dbc.Row([
+        dbc.Col([
+            dash.page_container
+        ], xs=8, sm=8, md=10, lg=10, xl=10, xxl=10)
+    ]
+    )
+], fluid=True, 
+#style={'background-image':'url("/assets/cactus.jpg")', 'background-repeat': 'no-repeat','opacity':'0.4'}
+ )
 
 
-@app.callback(Output('page-content', 'children'),
-              [Input('url', 'pathname')])
-def display_page(pathname):
-    if pathname == '/src/molplotly_layout':
-        return molplotly_layout.layout
-    if pathname == '/src/piechart_layout':
-        return piechart_layout.layout
 
+@app.callback(
+    Output('offcanvas', 'is_open'),
+    Input('open-offcanvas','n_clicks'),
+    State('offcanvas', 'is_open'),
+)
+def openNav(n1, o):
+    if n1:
+        return not o
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run_server(debug=True)
