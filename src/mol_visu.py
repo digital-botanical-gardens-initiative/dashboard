@@ -32,4 +32,4 @@ def update_selected_atoms(ids):
     return "Selected atom IDs: {}.".format(', '.join([str(i) for i in ids]))
 
 
-dash.register_page('2D molecules visualization', path='/2D-mol', layout=layout, icon="bi bi-house")
+dash.register_page(' 2D molecules visualization', path='/2D-mol', layout=layout, icon="bi bi-house")

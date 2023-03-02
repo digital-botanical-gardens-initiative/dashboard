@@ -9,4 +9,4 @@ layout = html.Div([
     ),
 ])
 
-dash.register_page('Smiles visualization', path='/smiles', layout=layout, icon="bi bi-house")
+dash.register_page(' Smiles visualization', path='/smiles', layout=layout, icon="bi bi-house")

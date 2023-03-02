@@ -1,9 +1,8 @@
 import dash
 from dash import dcc, html, Output, Input, State
-import dash_labs as dl
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from src import molplotly_layout, mol_visu,  piechart_layout, home, smiles_visu
+from src import mol_visu, home, smiles_visu, molplotly_layout, piechart_layout, tmap_visu
 
 from application import app
 
@@ -36,7 +35,7 @@ sidebar = dbc.Nav(
             )
             for page in dash.page_registry.values() if page['name'] not in home
 
-            ], label='Pages')
+            ], label='Explore')
         )
     ],
     vertical=True,

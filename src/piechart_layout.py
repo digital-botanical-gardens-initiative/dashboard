@@ -21,10 +21,10 @@ layout = html.Div(children=[
 ])
 
 @app.callback(
-    Output("graph", "children"), 
+    Output("graph", "figure"), 
     Input("names", "value")) 
-def generate_chart(value): 
-    fig = px.pie(df_esol, names=value)
+def generate_chart(col_name): 
+    fig = px.pie(df_esol, names=col_name)
     fig.update_traces(textposition='inside')
     return fig
 
