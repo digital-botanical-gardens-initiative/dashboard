@@ -28,5 +28,5 @@ jupyterFig = molplotly.add_molecules(fig=fig,
 layout = jupyterFig.layout
 
 
-dash.register_page(' Page 1', path='/page-1', layout=layout, icon="bi bi-arrow-through-heart-fill")
+dash.register_page(' molplotly', path='/molplotly', layout=layout, icon="bi bi-arrow-through-heart-fill")
 

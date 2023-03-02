@@ -12,12 +12,11 @@ piechart = px.pie(df_esol,names='structure_taxonomy_classyfire_02superclass')
 piechart.update_traces(textposition='inside')
 
 layout = html.Div(children=[
-    html.H1(children='DBGI Dashboard'),
-    html.Div(children='''Dash: A web application framework for your data.'''),
-    dcc.Graph(id="graph"),
+    html.H3(children='Piechart'),
     dcc.Dropdown(id='names',
         options=['structure_taxonomy_classyfire_02superclass', 'structure_taxonomy_classyfire_03class', 'structure_taxonomy_classyfire_04directparent'],
-        clearable=False)
+        clearable=False),
+    dcc.Graph(id="graph")
 ])
 
 @app.callback(
@@ -28,4 +27,4 @@ def generate_chart(col_name):
     fig.update_traces(textposition='inside')
     return fig
 
-dash.register_page(' Page 2', path='/page-2', layout=layout, icon="bi bi-pie-chart")
+dash.register_page(' Piecharts', path='/piecharts', layout=layout, icon="bi bi-pie-chart")
