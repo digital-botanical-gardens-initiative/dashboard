@@ -17,7 +17,7 @@ from application import app
 import molplotly
 
 # load a DataFrame with smiles
-df = pd.read_csv("/home/mwannier/dashboard/data/230106_frozen_metadata.csv")
+df = pd.read_csv("/home/mwannier/dashboard/data/230106_frozen_metadata.csv",nrows=100)
 df['y_pred'] = df['structure_xlogp']
 df['y_true'] = df['structure_exact_mass']
 #print(df)
@@ -43,7 +43,7 @@ layout = html.Div(
             dcc.Graph(id="graph-basic-2", figure=fig, clear_on_unhover=True),   
             dcc.Tooltip(
                 id="graph-tooltip", background_color=f"rgba(255,255,255,0.75)"
-            ),
+            ), 
         ]
     )
 

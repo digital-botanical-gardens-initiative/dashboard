@@ -2,7 +2,8 @@ import dash
 from dash import dcc, html, Output, Input, State
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from src import mol_visu, home, smiles_visu, molplotly_layout, piechart_layout#, tmap_visu
+from src import mol_visu, home, smiles_visu, molplotly_layout, piechart_layout, test#, tmap_visu
+from GNPS_LCMSDashboard import layout
 
 from application import app
 
@@ -60,8 +61,8 @@ app.layout = dbc.Container([
     ]),
 
     dbc.Row([
-        dbc.Col(html.Div("DBGI",
-                         style={'fontSize': 50, 'textAlign': 'center'}))
+        dbc.Col(html.Div("Digital Botanical Garden Initiative",
+                         style={'fontSize': 50, 'textAlign': 'center', 'font-family':'Adorable'}))
     ]),
 
     html.Hr(),
@@ -88,4 +89,4 @@ def openNav(n1, o):
         return not o
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=1099)
