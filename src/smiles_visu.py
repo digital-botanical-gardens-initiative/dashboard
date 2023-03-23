@@ -11,11 +11,13 @@ smiles_unique = df[['structure_taxonomy_classyfire_04directparent','structure_sm
 
 
 layout = html.Div([
-    dcc.Dropdown(id='names', options=[{'label': row['structure_taxonomy_classyfire_04directparent'], 
-                                       'value': row['structure_smiles_2D']} for index, row in df.iterrows()]),
+    #dcc.Dropdown(id='names', options=[{'label': row['structure_taxonomy_classyfire_04directparent'], 
+    #                                   'value': row['structure_smiles_2D']} for index, row in df.iterrows()]),
     html.Div(id='jsme-container')
 ])
 
+
+'''
 # Define the callback function
 @app.callback(Output('jsme-container', 'children'), [Input('names', 'value')])
 def update_jsme(value):
@@ -23,5 +25,5 @@ def update_jsme(value):
         return dashbio.Jsme(smiles=value)
     else:
         return ''
-
+'''
 dash.register_page(' Smiles visualization', path='/smiles', layout=layout, icon="bi bi-house")

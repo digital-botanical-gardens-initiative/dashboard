@@ -45,6 +45,7 @@ def md_data(row):
 
     return row
 
+
 def apply_md_data(df):
     modified_rows = []
     for index, row in tqdm(df.iterrows(), total=len(df)):

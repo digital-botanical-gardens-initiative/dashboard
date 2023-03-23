@@ -2,8 +2,8 @@ import dash
 from dash import dcc, html, Output, Input, State
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
-from src import mol_visu, home, smiles_visu, molplotly_layout, piechart_layout, test#, tmap_visu
-from GNPS_LCMSDashboard import layout
+from src import mol_visu, home, smiles_visu, molplotly_layout, piechart_layout, element_visu#, tmap_visu
+#from GNPS_LCMSDashboard import layout
 
 from application import app
 

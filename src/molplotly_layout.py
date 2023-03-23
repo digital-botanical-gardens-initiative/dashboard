@@ -126,13 +126,7 @@ def display_hover(hoverData):
                     )
                 )
             hoverbox_elements.append(
-                html.Img(
-                    src=img_str,
-                    style={
-                       "width": "100%",
-                       "background-color": f"rgba(255,255,255,{mol_alpha})",
-                    },
-               )
+                c
             )
 
         title_col = 'structure_nameTraditional'
