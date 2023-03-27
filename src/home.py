@@ -9,13 +9,17 @@ from rdkit.Chem.rdchem import Mol
 from rdkit.Chem.Draw import rdMolDraw2D
 from io import BytesIO
 import base64
-import os
+import os, sys
 from tqdm import tqdm
 from dash.exceptions import PreventUpdate
 import time
+from . import element_visu
 
 
 CSV_PATH = f'{os.getcwd()}/data/230106_frozen_metadata.csv'
+
+sys.path.append(f'{os.getcwd()}/src/element_visu.py')
+
 
 
 def smile_to_img_md(smile):
@@ -38,6 +42,7 @@ def md_data(row):
     row['organism_wikidata'] = '['+ row['organism_wikidata'].split('/')[-1] + '](' + row['organism_wikidata'] + ')'
     row['reference_wikidata'] = '['+ row['reference_wikidata'].split('/')[-1] + '](' + row['reference_wikidata'] + ')'
     row['reference_doi'] = '[' + row['reference_doi'] + '](https://doi.org/' + row['reference_doi'] + ')'
+    row['structure_nameTraditional'] = '['+ row['structure_nameTraditional'].split('/')[-1] + '](/element/' + row['structure_nameTraditional'] + ')'
 
     # Change smiles to img in html format
     row['structure_smiles'] = smile_to_img_md(row['structure_smiles'])
@@ -67,7 +72,7 @@ df['changed'] = 0
 
 
 layout = html.Div(
-    [
+    [   dcc.Location(id="url"),
         header,
         dcc.Input(
             id="input_text",
@@ -80,8 +85,7 @@ layout = html.Div(
                                                     'width': '100vw',
                                                     'margin-right': '50',
                                                     'margin-left':'50'})
-    ]
-)
+])
 
 
 @app.callback(
@@ -133,7 +137,7 @@ def search_dataframe_vectorized(n_clicks, user_input):
     # Create a Dash DataTable using the list of dictionaries
     datatable = dash_table.DataTable(
         id='datatable',
-        columns=[{'id': col, 'name': col, 'presentation': 'markdown'} if col in ['structure_wikidata','organism_wikidata','reference_wikidata','structure_smiles_2D','structure_smiles', 'reference_doi'] else {'id': col, 'name': col} for col in matching_rows.columns],
+        columns=[{'id': col, 'name': col, 'presentation': 'markdown'} if col in ['structure_wikidata','organism_wikidata','reference_wikidata','structure_smiles_2D','structure_smiles', 'reference_doi', 'structure_nameTraditional'] else {'id': col, 'name': col} for col in matching_rows.columns],
         data=data,
         markdown_options={"html": True},
         style_table={'overflowX': 'scroll', 'marginRight': '100'},
@@ -147,6 +151,9 @@ def search_dataframe_vectorized(n_clicks, user_input):
 
     # Return the DataTable and the progress bar updates
     return datatable, progress_bar
+
+
+
 
 dash.register_page('Home', path='/', layout=layout, icon="bi bi-house")
 

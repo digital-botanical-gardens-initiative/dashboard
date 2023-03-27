@@ -66,6 +66,11 @@ def element_visualization(element,column):
         sort_action='native'
     )
 
+    organisms = sorted(list(set(df['organism_name'].astype(str))))
+    #organisms_md = '\n'.join([f'- {item}' for item in organisms])
+    num_columns = 4
+    column_length = len(organisms) // num_columns + (len(organisms) % num_columns > 0)
+    columns = [organisms[i:i + column_length] for i in range(0, len(organisms), column_length)]
 
 
     layout = html.Div([
@@ -99,8 +104,16 @@ def element_visualization(element,column):
                                 }),
                                 html.Caption('2D')])
                         ]),
-                html.Hr(),
-                        html.Div([html.H4('Phylogeny'), datatable])
+                        html.Hr(),
+                        html.Div([html.H4('Phylogeny'), datatable]),
+                        html.Hr(),
+                        html.Div([html.H4('Organisms'),
+                                    dbc.Row([
+                                        dbc.Col([
+                                            html.Ul([html.Li(dcc.Link(item,href=f'/organism/{item}')) for item in col])
+                                        ]) for col in columns
+                                    ])
+                            ])
                 ])
     ], style={'height': '100vh',
                 'width': '100vw',
@@ -110,6 +123,6 @@ def element_visualization(element,column):
     return layout
 
 
-layout = element_visualization('http://www.wikidata.org/entity/Q43656','structure_wikidata')
+#layout = element_visualization('http://www.wikidata.org/entity/Q43656','structure_wikidata')
 
-dash.register_page('element', path='/element', layout=layout, icon="bi bi-house")
+#dash.register_page('element', path='/element', layout=layout, icon="bi bi-house")
