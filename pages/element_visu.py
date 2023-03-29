@@ -1,7 +1,7 @@
+from urllib.parse import unquote
 import dash
-from dash import html, dcc, Input, Output, dash_table, State
+from dash import html, dcc, Input, Output, dash_table, State, register_page
 import dash_bootstrap_components as dbc
-from application import app
 import dash_bio as dashbio
 import dask.dataframe as dd
 from rdkit import Chem
@@ -11,6 +11,11 @@ from io import BytesIO
 import base64
 import os
 
+register_page(
+    __name__,
+    path_template="/element/<elementname>",
+    path="/element/Cholesterol",
+)
 
 
 def smile_to_img(smile):
@@ -27,7 +32,8 @@ def smile_to_img(smile):
         img_str = f"data:image/svg+xml;base64,{repr(img_str)[2:-1]}"
     return img_str
 
-def element_visualization(element,column):
+def layout(elementname=None, **other_unknown_query_strings):
+
     CSV_PATH = f'{os.getcwd()}/data/230106_frozen_metadata.csv'
 
     df = dd.read_csv(CSV_PATH, dtype={'manual_validation': 'object',
@@ -38,7 +44,7 @@ def element_visualization(element,column):
                                         'organism_taxonomy_ottid': 'float64',
                                         'structure_cid': 'float64',
                                         'structure_taxonomy_classyfire_chemontid': 'float64'})
-    df = df[(df[column] == element)]
+    df = df[(df['structure_nameTraditional'] == elementname)]
     df = df.compute()
 
     name = list(set(df['structure_nameTraditional'].astype(str)))[0]
@@ -107,7 +113,7 @@ def element_visualization(element,column):
                         html.Hr(),
                         html.Div([html.H4('Phylogeny'), datatable]),
                         html.Hr(),
-                        html.Div([html.H4('Organisms'),
+                        html.Div([html.H4('Present in:'),
                                     dbc.Row([
                                         dbc.Col([
                                             html.Ul([html.Li(dcc.Link(item,href=f'/organism/{item}')) for item in col])
@@ -120,9 +126,5 @@ def element_visualization(element,column):
                 'margin-right': '50',
                 'margin-left':'50'})
 
+
     return layout
-
-
-#layout = element_visualization('http://www.wikidata.org/entity/Q43656','structure_wikidata')
-
-#dash.register_page('element', path='/element', layout=layout, icon="bi bi-house")

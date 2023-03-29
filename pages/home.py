@@ -1,7 +1,12 @@
+"""
+Note that the callback will trigger even if prevent_initial_call=True. This is because dcc.Location must
+be in app.py.  Since the dcc.Location component is not in the layout when navigating to this page, it triggers the callback.
+The workaround is to check if the input value is None.
+"""
+
 import dash
-from dash import html, dcc, Input, Output, dash_table, State
+from dash import html, dcc, Input, Output, dash_table, State, callback, register_page
 import dash_bootstrap_components as dbc
-from application import app
 import pandas as pd
 import dash_bio as dashbio
 from rdkit import Chem
@@ -12,15 +17,6 @@ import base64
 import os, sys
 from tqdm import tqdm
 from dash.exceptions import PreventUpdate
-import time
-from . import element_visu
-
-
-CSV_PATH = f'{os.getcwd()}/data/230106_frozen_metadata.csv'
-
-sys.path.append(f'{os.getcwd()}/src/element_visu.py')
-
-
 
 def smile_to_img_md(smile):
     buffered = BytesIO()
@@ -63,24 +59,24 @@ def apply_md_data(df):
     return pd.DataFrame(modified_rows)
 
 
+register_page(__name__, path="/")
+
+CSV_PATH = f'{os.getcwd()}/data/230106_frozen_metadata.csv'
 
 header = html.H3('Welcome to home page!')
-
     # Read the data from the CSV file
 df = pd.read_csv(CSV_PATH, nrows=100)
 df['changed'] = 0
 
 
 layout = html.Div(
-    [   dcc.Location(id="url"),
-        header,
+    [   header,
         dcc.Input(
             id="input_text",
             type="text",
             placeholder="input type text",
         ),
         html.Button('Submit', id='submit-val', n_clicks=0),
-        html.Div(id='progress-container'),
         html.Div(id='datatable-container', style={'height': '100vh',
                                                     'width': '100vw',
                                                     'margin-right': '50',
@@ -88,9 +84,9 @@ layout = html.Div(
 ])
 
 
-@app.callback(
+
+@callback(
     Output('datatable-container', 'children'),
-    Output('progress-container', 'children'),
     Input('submit-val', 'n_clicks'),
     State("input_text", "value"),
 )
@@ -98,27 +94,6 @@ def search_dataframe_vectorized(n_clicks, user_input):
 
     if user_input is None or user_input == "":
         raise PreventUpdate  # Prevent the callback from running
-
-    # Create the progress bar
-    progress_bar = html.Div([
-        html.Div('', id='progress-bar', style={'width': '0%'}),
-        html.Div('0%', id='progress-label'),
-    ])
-
-    # Set the total number of iterations
-    total_iterations = 100
-
-    # Create a list to store the progress bar updates
-    progress_updates = []
-
-    # Loop through the iterations
-    for i in tqdm(range(total_iterations)):
-        time.sleep(0.1)  # replace with your function
-        progress_updates.append(html.Div('', style={'width': f'{i}%'}))
-        progress_label = f'{i+1}%'
-        if i == total_iterations-1:
-            progress_label = 'Done!'
-        progress_updates.append(html.Div(progress_label, style={'margin-left': f'{i}%'}))
 
     # Use the str.contains method to create a boolean mask of rows that contain the user input
     mask = df.apply(lambda x: x.str.contains(user_input, case=False), axis=1)
@@ -150,11 +125,14 @@ def search_dataframe_vectorized(n_clicks, user_input):
     )
 
     # Return the DataTable and the progress bar updates
-    return datatable, progress_bar
+    return datatable
 
 
 
 
-dash.register_page('Home', path='/', layout=layout, icon="bi bi-house")
+
+
+
+
 
 
