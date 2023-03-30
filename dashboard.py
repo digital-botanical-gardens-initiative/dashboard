@@ -10,7 +10,7 @@ app.config.suppress_callback_exceptions = True
 navbar = dbc.NavbarSimple(
     [
         dbc.Button("Home", href="/", color="secondary", className="me-1"),
-        dbc.Button("Piechart", href="/piechart_layout", color="secondary"),
+        dbc.Button("Explore", href="/explore", color="secondary"),
     ],
     brand="Digital Botanical Garden Initiative",
     color="primary",
