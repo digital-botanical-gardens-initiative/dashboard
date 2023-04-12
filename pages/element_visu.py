@@ -1,15 +1,22 @@
-from urllib.parse import unquote
-import dash
-from dash import html, dcc, Input, Output, dash_table, State, register_page
+from dash import html, dcc, dash_table, register_page
 import dash_bootstrap_components as dbc
 import dash_bio as dashbio
 import dask.dataframe as dd
 from rdkit import Chem
-from rdkit.Chem.rdchem import Mol
 from rdkit.Chem.Draw import rdMolDraw2D
 from io import BytesIO
 import base64
+import psycopg2
+import pandas as pd
 import os
+
+# import env variable
+from dotenv import load_dotenv
+load_dotenv()
+
+db_name=os.getenv('DB_NAME')
+db_pwd=os.getenv('DB_PWD')
+db_user=os.getenv('DB_USR')
 
 register_page(
     __name__,
@@ -33,19 +40,16 @@ def smile_to_img(smile):
     return img_str
 
 def layout(elementname=None, **other_unknown_query_strings):
-
-    CSV_PATH = f'{os.getcwd()}/data/230106_frozen_metadata.csv'
-
-    df = dd.read_csv(CSV_PATH, dtype={'manual_validation': 'object',
-                                        'organism_taxonomy_07tribe': 'object',
-                                        'organism_taxonomy_10varietas': 'object',
-                                        'organism_taxonomy_gbifid': 'object',
-                                        'organism_taxonomy_ncbiid': 'float64',
-                                        'organism_taxonomy_ottid': 'float64',
-                                        'structure_cid': 'float64',
-                                        'structure_taxonomy_classyfire_chemontid': 'float64'})
-    df = df[(df['structure_nameTraditional'] == elementname)]
-    df = df.compute()
+    connection = psycopg2.connect(
+        dbname=db_name,
+        user=db_user,
+        password=db_pwd,
+        host="localhost",
+    )
+    query = f'SELECT * FROM {db_name} WHERE "structure_nameTraditional" = \'{elementname}\''
+    df = pd.read_sql_query(query, connection)
+    # Close the connection
+    connection.close()
 
     name = list(set(df['structure_nameTraditional'].astype(str)))[0]
     formula = list(set(df['structure_molecular_formula'].astype(str)))[0]

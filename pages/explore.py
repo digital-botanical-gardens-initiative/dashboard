@@ -1,15 +1,35 @@
 import dash
 from dash import html, dcc, Input, Output, dash_table, State, callback, register_page
-import dash_bootstrap_components as dbc
 import pandas as pd
 import dash_bio as dashbio
 from rdkit import Chem
-from rdkit.Chem.rdchem import Mol
 from rdkit.Chem.Draw import rdMolDraw2D
 from io import BytesIO
 import base64
-import os
 from dash.exceptions import PreventUpdate
+import dask.dataframe as dd
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
+from dask.diagnostics import ProgressBar
+from sqlalchemy import create_engine
+from dask.delayed import delayed
+from rdkit.Chem import AllChem
+from rdkit import DataStructs
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Tuple
+import psycopg2
+import os
+
+# import env variable
+from dotenv import load_dotenv
+load_dotenv()
+
+db_name=os.getenv('DB_NAME')
+db_pwd=os.getenv('DB_PWD')
+db_user=os.getenv('DB_USR')
+
+
+META = {'structure_wikidata': 'bool', 'structure_inchikey': 'bool', 'structure_inchi': 'bool', 'structure_smiles': 'bool', 'structure_molecular_formula': 'bool', 'structure_exact_mass': 'float64', 'structure_xlogp': 'float64', 'structure_smiles_2D': 'bool', 'structure_cid': 'float64', 'structure_nameIupac': 'bool', 'structure_nameTraditional': 'bool', 'structure_stereocenters_total': 'float64', 'structure_stereocenters_unspecified': 'float64', 'structure_taxonomy_npclassifier_01pathway': 'bool', 'structure_taxonomy_npclassifier_02superclass': 'bool', 'structure_taxonomy_npclassifier_03class': 'bool', 'structure_taxonomy_classyfire_chemontid': 'float64', 'structure_taxonomy_classyfire_01kingdom': 'bool', 'structure_taxonomy_classyfire_02superclass': 'bool', 'structure_taxonomy_classyfire_03class': 'bool', 'structure_taxonomy_classyfire_04directparent': 'bool', 'organism_wikidata': 'bool', 'organism_name': 'bool', 'organism_taxonomy_gbifid': 'bool', 'organism_taxonomy_ncbiid': 'float64', 'organism_taxonomy_ottid': 'float64', 'organism_taxonomy_01domain': 'bool', 'organism_taxonomy_02kingdom': 'bool', 'organism_taxonomy_03phylum': 'bool', 'organism_taxonomy_04class': 'bool', 'organism_taxonomy_05order': 'bool', 'organism_taxonomy_06family': 'bool', 'organism_taxonomy_07tribe': 'bool', 'organism_taxonomy_08genus': 'bool', 'organism_taxonomy_09species': 'bool', 'organism_taxonomy_10varietas': 'bool', 'reference_wikidata': 'bool', 'reference_doi': 'bool', 'manual_validation': 'bool', 'changed': 'float64'}
 
 def smile_to_img_md(smile):
     buffered = BytesIO()
@@ -31,9 +51,9 @@ def md_data(row):
     row['organism_wikidata'] = '['+ row['organism_wikidata'].split('/')[-1] + '](' + row['organism_wikidata'] + ')'
     row['reference_wikidata'] = '['+ row['reference_wikidata'].split('/')[-1] + '](' + row['reference_wikidata'] + ')'
     row['reference_doi'] = '[' + row['reference_doi'] + '](https://doi.org/' + row['reference_doi'] + ')'
-    row['structure_nameTraditional'] = '['+ row['structure_nameTraditional'].split('/')[-1] + '](/element/' + row['structure_nameTraditional'] + ')'
-    row['organism_name'] = '['+ row['organism_name'].split('/')[-1] + '](/organism/' + row['organism_name'] + ')'
-    
+    row['structure_nameTraditional'] = '['+ row['structure_nameTraditional'] + '](/element/' + row['structure_nameTraditional'] + ')'
+    row['organism_name'] = '['+ row['organism_name'] + '](/organism/' + row['organism_name'] + ')'
+
 
     # Change smiles to img in html format
     row['structure_smiles'] = smile_to_img_md(row['structure_smiles'])
@@ -42,26 +62,79 @@ def md_data(row):
     return row
 
 
-def apply_md_data(df):
-    modified_df = df.copy()
-    modified_df = modified_df.apply(md_data, axis=1)
-    return modified_df
+def apply_md_data(ddf):
+    modified_ddf = ddf.copy()
+    modified_ddf = modified_ddf.apply(md_data, axis=1, meta=META)
+    return modified_ddf
+
+def get_molecules_from_db(batch_size: int = 1000) -> List[Tuple[int, str]]:
+    connection = psycopg2.connect(f"dbname={db_name} user={db_user} password={db_pwd} host=localhost")
+    cursor = connection.cursor()
+
+    cursor.execute(f"SELECT COUNT(*) FROM {db_name}")
+    total_molecules = cursor.fetchone()[0]
+
+    for offset in range(0, total_molecules, batch_size):
+        cursor.execute(f"SELECT structure_nameTraditional, structure_smiles_2D FROM {db_name} LIMIT {batch_size} OFFSET {offset}")
+        yield cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+def calculate_similarity(reference_fp, mol_smiles: str, threshold: float) -> Tuple[str, float]:
+    mol = Chem.MolFromSmiles(mol_smiles)
+    mol_fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+    tanimoto_similarity = DataStructs.TanimotoSimilarity(reference_fp, mol_fp)
+
+    if tanimoto_similarity >= threshold:
+        return mol_smiles, tanimoto_similarity
+    return None
+
+def find_similar_molecules(reference_smiles: str, threshold: float, n_workers: int = 4) -> List[Tuple[str, float]]:
+    reference_mol = Chem.MolFromSmiles(reference_smiles)
+    reference_fp = AllChem.GetMorganFingerprintAsBitVect(reference_mol, 2, nBits=2048)
+
+    similar_molecules = []
+
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+        for batch in get_molecules_from_db():
+            future_results = [executor.submit(calculate_similarity, reference_fp, mol_smiles, threshold) for _, mol_smiles in batch]
+            for future in future_results:
+                result = future.result()
+                if result:
+                    similar_molecules.append(result)
+
+    return similar_molecules
 
 register_page(__name__, path="/explore")
 
-CSV_PATH = f'{os.getcwd()}/data/230106_frozen_metadata.csv'
-
 header = html.H3('Explore data:')
-    # Read the data from the CSV file
-df = pd.read_csv(CSV_PATH, dtype={'manual_validation': 'object',
-                                        'organism_taxonomy_07tribe': 'object',
-                                        'organism_taxonomy_10varietas': 'object',
-                                        'organism_taxonomy_gbifid': 'object',
-                                        'organism_taxonomy_ncbiid': 'float64',
-                                        'organism_taxonomy_ottid': 'float64',
-                                        'structure_cid': 'float64',
-                                        'structure_taxonomy_classyfire_chemontid': 'float64'},nrows=10000)
-df['changed'] = 0
+
+# Replace the following with your own database connection information
+db_connection_str = f'postgresql://{db_user}:{db_pwd}@localhost/{db_name}'
+engine = create_engine(db_connection_str)
+Session = sessionmaker(bind=engine)
+
+# Replace 'your_table_name' with the actual table name in your database
+query = f"SELECT * FROM {db_name}"
+
+# Define a function to read chunks of data from the database
+@delayed
+def load_chunk(chunk_id, chunk_size):
+    offset = chunk_id * chunk_size
+    chunk_query = f"{query} LIMIT {chunk_size} OFFSET {offset}"
+    with engine.connect() as conn:
+        return pd.read_sql(text(chunk_query), con=conn)
+
+# Set the number of chunks and chunk size based on your dataset size and available memory
+num_chunks = 10
+chunk_size = 10000
+
+# Read data from the PostgreSQL table into Dask DataFrame using the delayed function
+chunks = [load_chunk(chunk_id, chunk_size) for chunk_id in range(num_chunks)]
+ddf = dd.from_delayed(chunks)
+
+ddf['changed'] = 0
 
 
 layout = html.Div(
@@ -84,7 +157,8 @@ layout = html.Div(
 
 @callback(
     Output('search_layout', 'children'),
-    Input('dropdown', 'value')
+    Input('dropdown', 'value'),
+    prevent_initial_callbacks=True
 )
 def search_layout(search_type):
     if search_type == 'by name':
@@ -94,7 +168,7 @@ def search_layout(search_type):
                             type="text",
                             placeholder="input type text",
                         ),
-                        dcc.Checklist(['Exact'],[], id='exact-search'),
+                        dcc.Checklist(options=[{'label': 'Exact', 'value': 'exact'}], value=[], id='exact-search-name'),
                         html.Button(
                             'Submit',
                             id='submit-val', 
@@ -106,7 +180,7 @@ def search_layout(search_type):
                 width='70%',
                 height='50vh',
             ),
-            dcc.Checklist(['Exact'],[], id='exact-search'),
+            dcc.Checklist(options=[{'label': 'Exact', 'value': 'exact'}], value=[], id='exact-search-structure'),
             html.Button(
                 'Submit',
                 id='submit-structure',
@@ -122,50 +196,67 @@ def search_layout(search_type):
 @callback(
     Output('hidden-data-text', 'children'),
     Input('submit-val', 'n_clicks'),
-    State("input_text", "value")
+    State("input_text", "value"),
+    prevent_initial_callbacks=True
 )
 def search_text(n_clicks_text, user_input):
     if n_clicks_text is None or user_input is None or user_input == "":
         return None
     if user_input is not None and user_input != "" and n_clicks_text is not None and n_clicks_text > 0:
         # Use the str.contains method to create a boolean mask of rows that contain the user input
-        mask_text = df.apply(lambda x: x.str.contains(user_input, case=False), axis=1)
+        mask_text = ddf.apply(lambda x: x.str.contains(user_input, case=False), axis=1, meta=META)
 
         # Filter the DataFrame to keep only the rows that match the mask
-        matching_rows_text = df[mask_text.any(axis=1)]
+        matching_rows_text = ddf[mask_text.any(axis=1)]
 
         modified_rows_text = apply_md_data(matching_rows_text)
 
-        return modified_rows_text.to_json(date_format='iso', orient='split')
+        return modified_rows_text.compute().to_json(date_format='iso', orient='split')
     
 # Create a callback for the 'by structure' case
 @callback(
     Output('hidden-data-structure', 'children'),
     Input('submit-structure', 'n_clicks'),
-    State("input_structure", "value")
+    Input('exact-search-structure', 'value'),
+    State("input_structure", "value"),
+    prevent_initial_callbacks=True
 )
-def search_structure(n_clicks_structure, value_structure):
+def search_structure(n_clicks_structure, exact_search_value, value_structure):
     if n_clicks_structure is None or value_structure is None:
         return None
     
     if value_structure is not None and n_clicks_structure is not None and n_clicks_structure > 0:
         smiles = value_structure.getSmiles()
-        mask_structure = df['structure_smiles'].apply(lambda x: Chem.MolFromSmiles(x) is not None and Chem.MolFromSmiles(x).GetMol() is not None and Chem.MolFromSmiles(x).GetMol().HasSubstructMatch(Chem.MolFromSmiles(smiles)))
-        matching_rows_structure = df[mask_structure]
-    
+
+        if exact_search_value:
+            mask_structure = ddf['structure_smiles_2D'].apply(lambda x: Chem.MolFromSmiles(x) is not None and Chem.MolFromSmiles(x).GetMol() is not None and Chem.MolFromSmiles(x).GetMol().HasSubstructMatch(Chem.MolFromSmiles(smiles)))
+            matching_rows_structure = ddf[mask_structure]
+        else:
+            similar_molecules = find_similar_molecules(smiles, 0.85)
+            similar_smiles = [smiles for smiles, _ in similar_molecules]
+            matching_rows_structure = ddf[ddf['structure_smiles_2D'].isin(similar_smiles)]
+            print(matching_rows_structure)
+
         modified_rows_structure = apply_md_data(matching_rows_structure)
 
-    return modified_rows_structure.to_json(date_format='iso', orient='split')
+    return modified_rows_structure.compute().to_json(date_format='iso', orient='split')
 
-# Create a callback for displaying the datatable
+
+
 @callback(
     Output('datatable-container', 'children'),
     Input('hidden-data-text', 'children'),
     Input('hidden-data-structure', 'children'),
+    Input('dropdown', 'value'),
+    prevent_initial_callbacks=True
 )
-def display_datatable(data_text_json, data_structure_json):
+def display_datatable(data_text_json, data_structure_json, dropdown_value):
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+
+    # If the dropdown is the trigger, clear the datatable
+    if triggered_id == 'dropdown':
+        return []
 
     if triggered_id == 'hidden-data-text':
         if data_text_json is None:
@@ -185,7 +276,7 @@ def display_datatable(data_text_json, data_structure_json):
 def create_datatable(data):
     return dash_table.DataTable(
         id='datatable',
-        columns=[{'id': col, 'name': col, 'presentation': 'markdown'} if col in ['organism_name', 'structure_wikidata', 'organism_wikidata', 'reference_wikidata', 'structure_smiles_2D', 'structure_smiles', 'reference_doi', 'structure_nameTraditional'] else {'id': col, 'name': col} for col in df.columns],
+        columns=[{'id': col, 'name': col, 'presentation': 'markdown'} if col in ['organism_name', 'structure_wikidata', 'organism_wikidata', 'reference_wikidata', 'structure_smiles_2D', 'structure_smiles', 'reference_doi', 'structure_nameTraditional'] else {'id': col, 'name': col} for col in ddf.columns],
         data=data,
         markdown_options={"html": True},
         style_table={'overflowX': 'scroll', 'marginRight': '100'},
@@ -196,8 +287,11 @@ def create_datatable(data):
         style_as_list_view=True,
         sort_action='native',
         page_action='native',  # Enable pagination
+        virtualization=True,  # Enable virtualization for lazy loading
         page_size=10  # Set the number of rows per page
     )
+
+
 
 
 
