@@ -93,7 +93,7 @@ def layout(elementname=None, **other_unknown_query_strings):
                                 dbc.Col([
                                 html.Img(
                                 src=img_str, 
-                                title='smile', 
+                                title=smile[0], 
                                 style={
                                     "width": "50%",
                                     "background-color": f"rgba(255,255,255,{0.7})",
@@ -104,7 +104,7 @@ def layout(elementname=None, **other_unknown_query_strings):
                                 html.Caption('3D')]),
                                 dbc.Col([
                                 html.Img(src=img_2d_str,
-                                title='smile 2D',      
+                                title=smile_2d[0],      
                                 style={
                                     "width": "50%",
                                     "background-color": f"rgba(255,255,255,{0.7})",

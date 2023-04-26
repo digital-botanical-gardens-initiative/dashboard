@@ -1,0 +1,26 @@
+Traceback (most recent call last):
+  File "/home/mwannier/dashboard/smiles_to_ecfp.py", line 112, in <module>
+    conn.execute(stmt)
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 1414, in execute
+    return meth(
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/elements.py", line 486, in _execute_on_connection
+    return connection._execute_clauseelement(
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/engine/base.py", line 1630, in _execute_clauseelement
+    compiled_sql, extracted_params, cache_hit = elem._compile_w_cache(
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/elements.py", line 652, in _compile_w_cache
+    compiled_sql = self._compiler(
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/elements.py", line 291, in _compiler
+    return dialect.statement_compiler(dialect, self, **kw)
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/compiler.py", line 1269, in __init__
+    Compiled.__init__(self, dialect, statement, **kwargs)
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/compiler.py", line 710, in __init__
+    self.string = self.process(self.statement, **compile_kwargs)
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/compiler.py", line 755, in process
+    return obj._compiler_dispatch(self, **kwargs)
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/visitors.py", line 143, in _compiler_dispatch
+    return meth(self, **kw)  # type: ignore  # noqa: E501
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/compiler.py", line 5327, in visit_insert
+    crud_params_struct = crud._get_crud_params(
+  File "/home/mwannier/anaconda3/envs/dashboard/lib/python3.9/site-packages/sqlalchemy/sql/crud.py", line 326, in _get_crud_params
+    raise exc.CompileError(
+sqlalchemy.exc.CompileError: Unconsumed column names: class_name

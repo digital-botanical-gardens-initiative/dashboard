@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, Input, Output, dash_table, State, callback, register_page
+from dash import html, dcc, Input, Output, dash_table, State, callback, register_page, clientside_callback
 import pandas as pd
 import dash_bio as dashbio
 from rdkit import Chem
@@ -10,7 +10,6 @@ from dash.exceptions import PreventUpdate
 import dask.dataframe as dd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import text
-from dask.diagnostics import ProgressBar
 from sqlalchemy import create_engine
 from dask.delayed import delayed
 from rdkit.Chem import AllChem
@@ -19,6 +18,8 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import List, Tuple
 import psycopg2
 import os
+import dash_bootstrap_components as dbc
+
 
 # import env variable
 from dotenv import load_dotenv
@@ -102,7 +103,7 @@ def find_similar_molecules(reference_smiles: str, threshold: float, n_workers: i
             for future in future_results:
                 result = future.result()
                 if result:
-                    similar_molecules.append(result)
+                    similar_molecules.append(result[0])  # Append only the SMILES string
 
     return similar_molecules
 
@@ -140,12 +141,13 @@ ddf['changed'] = 0
 layout = html.Div(
     [   header,
         html.Hr(),
-        dcc.Dropdown(['by name','by structure'],id='dropdown'),
+        dcc.Dropdown(options=[{'label': 'By name', 'value': 'by_name'}, {'label': 'By structure', 'value': 'by_structure'}], id='dropdown'),
         html.Br(),
         dcc.Loading(id='loading', children=[
                                             html.Div(id='search_layout'),
                                             html.Div(id='hidden-data-text', style={'display': 'none'}),
                                             html.Div(id='hidden-data-structure', style={'display': 'none'}),
+                                            html.Div(id='hidden-smiles'),  # Add this line
                                             html.Div(id='datatable-container', style={'height': '100vh',
                                                                                         'width': '100vw',
                                                                                         'margin-right': '50',
@@ -161,7 +163,7 @@ layout = html.Div(
     prevent_initial_callbacks=True
 )
 def search_layout(search_type):
-    if search_type == 'by name':
+    if search_type == 'by_name':
         layout = html.Div([
                         dcc.Input(
                             id="input_text",
@@ -173,24 +175,23 @@ def search_layout(search_type):
                             'Submit',
                             id='submit-val', 
                             n_clicks=0)])
-    elif search_type == 'by structure':
-        layout = html.Div([
-            dashbio.Jsme( 
-                id='input_structure',
-                width='70%',
-                height='50vh',
-            ),
-            dcc.Checklist(options=[{'label': 'Exact', 'value': 'exact'}], value=[], id='exact-search-structure'),
-            html.Button(
-                'Submit',
-                id='submit-structure',
-                n_clicks=0
-            )
-        ])
+    elif search_type == 'by_structure':
+        layout = html.Div([html.Div(id='molecule-editor', style={'width': '800px', 'height': '600px'}),
+                            html.Br(),
+                            dbc.Input(id='smiles-input', type='text', placeholder='SMILES value will be displayed here...')])
     else:
         raise PreventUpdate
 
     return layout
+
+@callback(
+    Output('smiles-output', 'children'),
+    Input('smiles-input', 'value')
+)
+def update_smiles_output(smiles):
+    return smiles
+
+
 
 # Create a callback for the 'by text' case
 @callback(
@@ -218,29 +219,30 @@ def search_text(n_clicks_text, user_input):
     Output('hidden-data-structure', 'children'),
     Input('submit-structure', 'n_clicks'),
     Input('exact-search-structure', 'value'),
-    State("input_structure", "value"),
+    Input("input_structure", "smiles"),
     prevent_initial_callbacks=True
 )
 def search_structure(n_clicks_structure, exact_search_value, value_structure):
+    print(value_structure)
+
     if n_clicks_structure is None or value_structure is None:
         return None
     
     if value_structure is not None and n_clicks_structure is not None and n_clicks_structure > 0:
-        smiles = value_structure.getSmiles()
+        smiles = value_structure
 
         if exact_search_value:
-            mask_structure = ddf['structure_smiles_2D'].apply(lambda x: Chem.MolFromSmiles(x) is not None and Chem.MolFromSmiles(x).GetMol() is not None and Chem.MolFromSmiles(x).GetMol().HasSubstructMatch(Chem.MolFromSmiles(smiles)))
+            mask_structure = ddf['structure_smiles_2D'] == smiles
             matching_rows_structure = ddf[mask_structure]
         else:
             similar_molecules = find_similar_molecules(smiles, 0.85)
             similar_smiles = [smiles for smiles, _ in similar_molecules]
             matching_rows_structure = ddf[ddf['structure_smiles_2D'].isin(similar_smiles)]
-            print(matching_rows_structure)
+
 
         modified_rows_structure = apply_md_data(matching_rows_structure)
 
     return modified_rows_structure.compute().to_json(date_format='iso', orient='split')
-
 
 
 @callback(
