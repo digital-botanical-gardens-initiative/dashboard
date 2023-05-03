@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DBGI element</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="js/app.js" defer></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function () {
+      const alphabetContainer = document.querySelector('.alphabet');
+      const moleculesContainers = document.querySelectorAll('.molecule-container .molecules');
+      
+      function showMoleculeList(letter) {
+        // Hide all molecule containers
+        moleculesContainers.forEach(molecule => {
+          molecule.style.display = 'none';
+        });
+      
+        // Show the selected molecule container
+        const selectedMoleculeContainer = document.querySelector(`#molecules-${letter}`);
+        if (selectedMoleculeContainer) {
+          selectedMoleculeContainer.style.display = 'block';
+        }
+      }
+    
+      alphabetContainer.addEventListener('click', function (event) {
+        if (event.target.classList.contains('letter')) {
+          const letter = event.target.textContent;
+          showMoleculeList(letter);
+        }
+      });
+    
+      // Show the first letter's molecules list when the page is loaded
+      if (moleculesContainers.length > 0) {
+        const firstLetter = document.querySelector('.alphabet .letter').textContent;
+        showMoleculeList(firstLetter);
+      }
+      });
+
+  </script>
+  <style>
+    .navbar {background-color: green;}
+    .letter {
+      cursor: pointer;
+      padding: 0 5px;
+    }
+    .letter:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <%- include('./partials/nav.ejs') %>
+
+  <h1>Molecules list</h1>
+
+  <div class="alphabet">
+    <span class='letter'>123</span>
+    <% let i = 65; %>
+    <% for (; i <= 90; i++) { %>
+      <span class="letter"> <%= String.fromCharCode(i) %></span>
+    <% } %>
+  </div>
+  <div class="molecule-container">
+    <% let isFirstLetter = true; %>
+    <% for (const letter in groupedMolecules) { %>
+      <div id="molecules-<%= letter %>" class="molecules">
+        <h2><%= letter %></h2>
+        <div class="row">
+          <% groupedMolecules[letter].forEach((molecule, index) => { %>
+            <div class="col-md-3">
+              <ul>
+                <li>
+                  <a href="/element/<%= encodeURIComponent(molecule) %>">
+                    <%- molecule %>
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <% if ((index + 1) % 4 === 0) { %>
+        </div>
+        <div class="row">
+            <% } %>
+          <% }) %> 
+        </div>
+      </div>
+      <% isFirstLetter = false; %>
+    <% } %>
+  </div>
+</body>
+
+</html>
