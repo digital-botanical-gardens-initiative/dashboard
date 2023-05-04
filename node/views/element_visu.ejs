@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Element</title>
+    <title>DBGI - <%=id%></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="js/app.js" defer></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -44,9 +45,14 @@
           padding: 10px;
           margin: 10px;
         }
+        .navbar {background-color: green;}
+        tr {border-bottom: 2px solid #ddd;}
+        table {width: 100%;}
     </style>
 </head>
 <body>
+  <%- include('./partials/nav.ejs') %>
+
   <div class="container">
     <h2><%= id %> (<a href="<%= wikidata %>"><%= wikidata_id %></a>)</h2>
     <br>
@@ -60,9 +66,24 @@
     </div>
     <hr>
     <h4>Phylogeny</h4>
-    <table class="table">
-      <!-- Use a loop to generate the table rows based on the datatable data -->
-    </table>
+    <table>
+      <tr>
+          <th>Kingdom</th>
+          <td><%=kingdom%></td>
+      </tr>
+      <tr>
+          <th>SuperClass</th>
+          <td><%=superclass%></td>
+      </tr>
+      <tr>
+          <th>Class</th>
+          <td><%=structure_class%></td>
+      </tr>
+      <tr>
+          <th>Direct parent</th>
+          <td><%=directparent%></td>
+      </tr>
+    </table> 
     <hr>
     <h4>Present in:</h4>
   </div>

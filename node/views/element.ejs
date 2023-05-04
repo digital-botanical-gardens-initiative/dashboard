@@ -12,36 +12,32 @@
   <script src="https://d3js.org/d3.v6.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script>
-      document.addEventListener('DOMContentLoaded', function () {
-      const alphabetContainer = document.querySelector('.alphabet');
-      const moleculesContainers = document.querySelectorAll('.molecule-container .molecules');
-      
-      function showMoleculeList(letter) {
-        // Hide all molecule containers
-        moleculesContainers.forEach(molecule => {
-          molecule.style.display = 'none';
-        });
-      
-        // Show the selected molecule container
-        const selectedMoleculeContainer = document.querySelector(`#molecules-${letter}`);
-        if (selectedMoleculeContainer) {
-          selectedMoleculeContainer.style.display = 'block';
-        }
-      }
-    
-      alphabetContainer.addEventListener('click', function (event) {
-        if (event.target.classList.contains('letter')) {
-          const letter = event.target.textContent;
-          showMoleculeList(letter);
-        }
-      });
-    
-      // Show the first letter's molecules list when the page is loaded
-      if (moleculesContainers.length > 0) {
-        const firstLetter = document.querySelector('.alphabet .letter').textContent;
-        showMoleculeList(firstLetter);
-      }
-      });
+  document.addEventListener('DOMContentLoaded', function () {
+  const alphabetContainer = document.querySelector('.alphabet');
+  const moleculesContainers = document.querySelectorAll('.molecule-container > .molecules');
+
+  function showMoleculeList(letter) {
+    // Hide all molecule containers
+    moleculesContainers.forEach(molecule => {
+      molecule.style.display = 'none';
+    });
+
+    // Show the selected molecule container
+    const selectedMoleculeContainer = document.querySelector(`#molecules-${letter}`);
+    if (selectedMoleculeContainer) {
+      selectedMoleculeContainer.style.display = 'block';
+    }
+  }
+
+  alphabetContainer.addEventListener('click', function (event) {
+    const target = event.target;
+    if (target.classList.contains('letter')) {
+      event.preventDefault();
+      const letter = target.textContent.trim();
+      showMoleculeList(letter);
+    }
+  });
+});
 
   </script>
   <style>
@@ -52,6 +48,25 @@
     }
     .letter:hover {
       text-decoration: underline;
+    }
+    .molecules {
+    display: none;
+    }
+    .element-item {
+      list-style-type: none;
+      width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
+      overflow: hidden; /* make sure it hides the content that overflows */
+      white-space: nowrap; /* don't break the line */
+      text-overflow: ellipsis; /* give the beautiful '...' effect */
+    }
+    .element-grid {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+    }
+    ul {
+      columns: 3;
+      -webkit-columns: 3;
+      -moz-columns: 3;
     }
   </style>
 </head>
@@ -72,23 +87,17 @@
     <% for (const letter in groupedMolecules) { %>
       <div id="molecules-<%= letter %>" class="molecules">
         <h2><%= letter %></h2>
-        <div class="row">
-          <% groupedMolecules[letter].forEach((molecule, index) => { %>
-            <div class="col-md-3">
+            <div class="element-grid">
               <ul>
-                <li>
+                <% groupedMolecules[letter].forEach((molecule, index) => { %>
+                <li class="element-item">
                   <a href="/element/<%= encodeURIComponent(molecule) %>">
                     <%- molecule %>
                   </a>
                 </li>
+                  <% }) %>
               </ul>
             </div>
-            <% if ((index + 1) % 4 === 0) { %>
-        </div>
-        <div class="row">
-            <% } %>
-          <% }) %> 
-        </div>
       </div>
       <% isFirstLetter = false; %>
     <% } %>

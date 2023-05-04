@@ -1,9 +1,11 @@
 const express = require('express');
 const dotenv = require("dotenv");
 const RDKit=require('rdkit'); 
+const exploreRoutes = require('./routes/exploreRoutes');
 
 // Import the initRDKit function from the external script file
 const { initRDKit } = require("./routes/moleculeVisuRoutes.js");
+
 
 // import dotenv file
 dotenv.config();
@@ -17,7 +19,16 @@ app.set('view engine', 'ejs');
 //listen for requests
 app.listen(3000, '134.21.20.118', () => console.log('Server listening on 134.21.20.118:3000'));
 
-app.use(express.static('public'));
+app.use(express.static('public'), exploreRoutes);
+
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log('Request headers:', req.headers);
+  console.log('Request body:', req.body);
+  next();
+});
 
 require('dotenv').config();
 
@@ -30,6 +41,33 @@ const pool = new Pool({
     database: process.env.PG_DATABASE,
     ssl: true,
 })
+
+function search(req, res, next) {
+  // user's search term
+  var searchTerm = req.query.search;
+  var column = req.query.column;
+
+    let query = 'SELECT * FROM data';
+
+    if (searchTerm != '' && column != ''){
+      query = `SELECT * FROM data WHERE ` + column + `= '` + searchTerm + `'`; 
+    }
+
+  pool.query(query, (err, result) => {
+    if(err){
+      req.searchResult = '';
+      req.searchTerm = '';
+      req.column = '';
+      next();
+    }
+
+    req.searchResult = result;
+    req.searchTerm = searchTerm;
+    req.column = column;
+    
+    next();
+  })
+}
 
 
 app.get('/', (req,res) => {
@@ -49,7 +87,7 @@ app.get('/element', async (req, res) => {
     const query = `
       SELECT
       UPPER(SUBSTRING(structure_nameTraditional, 1, 1)) AS first_letter,
-      ARRAY_AGG(structure_nameTraditional) AS molecules
+      ARRAY_AGG(DISTINCT structure_nameTraditional) AS molecules
       FROM data
       WHERE structure_nameTraditional IS NOT NULL
       GROUP BY first_letter
@@ -67,7 +105,7 @@ app.get('/element', async (req, res) => {
     res.render('element', { groupedMolecules });
   } catch (error) {
     console.error('Error fetching elements:', error);
-    res.status(500).send('Error fetching elements');
+    res.status(500).send('Oops! Looks like something went wrong...')
   }
 });
 
@@ -86,12 +124,16 @@ app.get('/element/:id', async (req,res) =>{
     const formula = rows[0].structure_molecular_formula;
     const smile = rows[0].structure_smiles;
     const smile_2d = rows[0].structure_smiles_2D;
+    const kingdom = rows[0].structure_taxonomy_classyfire_01kingdom;
+    const superclass = rows[0].structure_taxonomy_classyfire_02superclass;
+    const structure_class = rows[0].structure_taxonomy_classyfire_03class;
+    const directparent = rows[0].structure_taxonomy_classyfire_04directparent;
   
-  res.render('element_visu', { id, wikidata, wikidata_id, formula, smile, smile_2d });
+  res.render('element_visu', { id, wikidata, wikidata_id, formula, smile, smile_2d, kingdom, superclass, structure_class, directparent });
 
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).send('Error in the element visualization')
+    res.status(500).send('Oops! Looks like something went wrong...')
   }
 })
 
@@ -103,12 +145,14 @@ app.post('/element/:id', function(req, res){
   res.send( "molwt is:"+molwt+"<br><br>"+"smiles is:"+ smiles+"<br><br>"+remol );
 });
 
+
+
 app.get('/organism', async (req, res) => {
   try {
     const query = `
       SELECT
       UPPER(SUBSTRING(organism_name, 1, 1)) AS first_letter,
-      ARRAY_AGG(organism_name) AS organisms
+      ARRAY_AGG(DISTINCT organism_name) AS organisms
       FROM data
       WHERE organism_name IS NOT NULL
       GROUP BY first_letter
@@ -126,22 +170,66 @@ app.get('/organism', async (req, res) => {
     res.render('organism', { groupedOrganisms });
   } catch (error) {
     console.error('Error fetching organisms:', error);
-    res.status(500).send('Error fetching organisms');
+    res.status(500).send('Oops! Looks like something went wrong...')
   }
 });
 
-app.get('/organism/<id>', async (req,res) =>{
+app.get('/organism/:id', async (req,res) =>{
   try{
+    const id = req.params.id;
+    const query = `
+      SELECT *
+      FROM data
+      WHERE organism_name = '${id}';`;
+
+    const { rows } = await pool.query(query);
+    const wikidata = rows[0].organism_wikidata;
+    const wikidata_id = wikidata.split("/").pop();
+    const domain = rows[0].organism_taxonomy_01domain;
+    const kingdom = rows[0].organism_taxonomy_02kingdom;
+    const phylum = rows[0].organism_taxonomy_03phylum;
+    const organism_class = rows[0].organism_taxonomy_04class;
+    const order = rows[0].organism_taxonomy_05order;
+    const family = rows[0].organism_taxonomy_06family;
+    const tribe = rows[0].organism_taxonomy_07tribe;
+    const genus = rows[0].organism_taxonomy_08genus;
+    const species = rows[0].organism_taxonomy_09species;
+    const varietas = rows[0].organism_taxonomy_10varietas;
+    const molecules = [...new Set(rows.map(row => row.structure_nametraditional))];    
+
+  
+  res.render('organism_visu', { id, wikidata, wikidata_id, 
+                                domain, kingdom, phylum, organism_class, 
+                                order, family, tribe, genus, 
+                                species, varietas, molecules});
 
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).send('Error in the organism visualization')
-  }
+    res.status(500).send('Oops! Looks like something went wrong...')
+    }
 })
 
+
+
+
 app.get('/explore', (req,res) => {
-    res.render('explore', {title: 'Explore'});
+  try{
+    var searchResult = req.searchResult;
+
+    res.render('explore', {title: 'Explore',
+                          results: searchResult.length,
+                          searchTerm: req.searchTerm,
+                          searchResult: searchResult,
+                          column: req.column});
+
+  } catch (error) {
+    console.error('Error: ', error);
+    res.status(500).send('Oops! Looks like something went wrong...')
+  }
 });
+
+
+
 
 app.use((req,res) => {
     res.status(404).render('404', {title: '404'});

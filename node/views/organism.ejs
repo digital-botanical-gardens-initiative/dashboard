@@ -31,16 +31,11 @@
     
       alphabetContainer.addEventListener('click', function (event) {
         if (event.target.classList.contains('letter')) {
+          event.preventDefault();
           const letter = event.target.textContent;
           showOrganismList(letter);
         }
       });
-    
-      // Show the first letter's organisms list when the page is loaded
-      if (organismsContainers.length > 0) {
-        const firstLetter = document.querySelector('.alphabet .letter').textContent;
-        showOrganismList(firstLetter);
-      }
       });
 
   </script>
@@ -51,7 +46,22 @@
       padding: 0 5px;
     }
     .letter:hover {
-      text-decoration: underline;
+      text-decoration: underline; 
+    }
+    .organisms {
+    display: none;
+    }
+    .organism-item {
+      list-style-type: none;
+    }
+    .organism-grid {
+            display: grid;
+            grid-template-columns: repeat(4, auto);
+        }
+    ul {
+      columns: 4;
+      -webkit-columns: 4;
+      -moz-columns: 4;
     }
   </style>
 </head>
@@ -71,23 +81,17 @@
     <% for (const letter in groupedOrganisms) { %>
       <div id="organisms-<%= letter %>" class="organisms">
         <h2><%= letter %></h2>
-        <div class="row">
-          <% groupedOrganisms[letter].forEach((organism, index) => { %>
-            <div class="col-md-3">
+            <div class="organism-grid">
               <ul>
-                <li>
-                  <a href="/element/<%= encodeURIComponent(organism) %>">
+                <% groupedOrganisms[letter].forEach((organism, index) => { %>
+                <li class="organism-item">
+                  <a href="/organism/<%= encodeURIComponent(organism) %>">
                     <%- organism %>
                   </a>
                 </li>
+                 <% }) %> 
               </ul>
             </div>
-            <% if ((index + 1) % 4 === 0) { %>
-              </div>
-              <div class="row">
-            <% } %>
-          <% }) %> 
-        </div>
       </div>
       <% isFirstLetter = false; %>
     <% } %>
