@@ -21,14 +21,9 @@ app.listen(3000, '134.21.20.118', () => console.log('Server listening on 134.21.
 
 app.use(express.static('public'), exploreRoutes);
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.use((req, res, next) => {
-  console.log('Request headers:', req.headers);
-  console.log('Request body:', req.body);
-  next();
-});
 
 require('dotenv').config();
 
@@ -210,8 +205,6 @@ app.get('/organism/:id', async (req,res) =>{
 })
 
 
-
-
 app.get('/explore', (req,res) => {
   try{
     var searchResult = req.searchResult;
@@ -228,7 +221,15 @@ app.get('/explore', (req,res) => {
   }
 });
 
+app.get('/explore/text', (req,res) => {
+  try{
+    res.render('explore_text');
 
+  } catch (error) {
+    console.error('Error: ', error);
+    res.status(500).send('Oops! Looks like something went wrong...')
+  }
+});
 
 
 app.use((req,res) => {

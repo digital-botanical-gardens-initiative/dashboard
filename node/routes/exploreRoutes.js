@@ -3,6 +3,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 
+router.use(express.urlencoded({ extended: true }));
+
+
+
+
 const getTableColumns = async () => {
   const tableColumns = await db.query(`
     SELECT column_name
@@ -18,22 +23,33 @@ router.get('/explore', async (req, res) => {
     res.render('explore', { columns });
   } catch (err) {
     console.error(err);
-    res.send('Error');
+    res.send('Error while fetching columns names');
   }
 });
 
-router.post('/explore', async (req, res) => {
+router.all('/explore/text', async (req, res) => {
   try {
-    //const column = req.body.column;
-    console.log(req.body);
-    const searchTerm = req.body.search;
-    const results = await db.query(`SELECT * FROM data WHERE ${column} ILIKE $1`, [`%${searchTerm}%`]);
-    res.render('explore', { results: results.rows });
+    const columns = await getTableColumns();
+
+    if (req.method === 'POST') {
+      const column = req.body.column;
+      const searchTerm = req.body.search;
+      const results = await db.query(`SELECT * FROM data WHERE ${column} ILIKE $1`, [`%${searchTerm}%`]);
+      res.render('explore_text', { columns, results: results.rows });
+    } else {
+      res.render('explore_text', { columns });
+    }
   } catch (err) {
     console.error(err);
-    res.send('Error');
+    res.send('Error while fetching columns names');
   }
 });
+
+
+router.get('/explore/structure', (req, res) => {
+  res.render('explore_structure');
+});
+
 
 
 module.exports = router;

@@ -3,25 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Botanical Garden Initiative</title>
+  <title>DBGI - Browse Dataset</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-  <script type="text/javascript" language="javascript" src="../JSME_2022-09-26/jsme/jsme.nocache.js"></script>
-  <link rel="stylesheet" href="https://jsme-editor.github.io/dist/jsme/jsa.css">
-  <link rel="stylesheet" href="https://jsme-editor.github.io/dist/jsme/gwt/chrome/chrome.css">
-  <link rel="stylesheet" href="https://jsme-editor.github.io/dist/jsme/gwt/chrome/mosaic.css">
-  <script src="https://jsme-editor.github.io/dist/jsme/1C61E97966828F622DAAC75966E89735.cache.js"></script>
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
   <script src="js/app.js" defer></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
-  <script>
-        //this function will be called after the JavaScriptApplet code has been loaded.
-        function jsmeOnLoad() {
-            jsmeApplet = new JSApplet.JSME("jsme_container", "380px", "340px");
-        }
- </script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       var dropDown = document.getElementById("search_type");
@@ -37,9 +26,6 @@
   </script>
   <style>
     .navbar {background-color: green;}
-    .hidden{
-    display: none;
-    }
   </style>
 </head>
 <body>
@@ -48,9 +34,43 @@
     <h1>Explore data</h1>
     <br>
     <select name="search type" id="search_type">
-        <option disabled selected value> -- Search -- </option>
-        <option value="by_text">By text</option>
-        <option value="by_structure">By structure</option>
+      <option disabled selected value> -- Search -- </option>
+      <option value="by_text">By text</option>
+      <option value="by_structure">By structure</option>
     </select>
+    <div id="by_text" > 
+      <hr>
+      <form action="/explore/text" method="POST">
+        <select name="column">
+          <% columns.forEach(column => { %>
+            <option value="<%= column.column_name %>"><%= column.column_name %></option>
+          <% }) %>
+        </select>
+        <input type="text" name="search" placeholder="Search">
+        <button type="submit">Search</button>
+      </form>
+      <br>
+      <% if (typeof results !== 'undefined') { %>
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <% columns.forEach(column => { %>
+                <th><%= column.column_name %></th>
+              <% }) %>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.forEach(result => { %>
+              <tr>
+                <% columns.forEach(column => { %>
+                  <td><%= result[column.column_name] %></td>
+                <% }) %>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } %>
+    </div>
+
 </body>
 </html>
