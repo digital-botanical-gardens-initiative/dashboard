@@ -31,13 +31,8 @@
 <body>
     <%- include('./partials/nav.ejs') %>
 
-    <h1>Explore data</h1>
-    <br>
-    <select name="search type" id="search_type">
-      <option disabled selected value> -- Search -- </option>
-      <option value="by_text">By text</option>
-      <option value="by_structure">By structure</option>
-    </select>
+    <%- include('./partials/exploreDropdown.ejs') %>
+
     <div id="by_text" > 
       <hr>
       <form action="/explore/text" method="POST">
@@ -50,7 +45,7 @@
         <button type="submit">Search</button>
       </form>
       <br>
-      <% if (typeof results !== 'undefined') { %>
+      <% if (typeof results !== 'undefined' && results.length !== 0) { %>
         <table class="table table-bordered table-striped">
           <thead>
             <tr>
@@ -63,12 +58,20 @@
             <% results.forEach(result => { %>
               <tr>
                 <% columns.forEach(column => { %>
-                  <td><%= result[column.column_name] %></td>
+                  <% if (column.column_name === 'structure_wikidata' || column.column_name === 'organism_wikidata' || column.column_name === 'reference_wikidata') { %>
+                    <td><a href="<%= result[column.column_name] %>" target="_blank"><%= result[column.column_name].split("/").pop() %></a></td>
+                  <% } else if (column.column_name === 'structure_nametraditional') { %>
+                    <td><a href="/element/<%= result[column.column_name] %>"><%= result[column.column_name] %></a></td>
+                  <% } else { %>
+                    <td><%= result[column.column_name] %></td>
+                  <% } %>
                 <% }) %>
               </tr>
             <% }) %>
           </tbody>
         </table>
+      <% } else { %>
+        <h4> No results </h4>
       <% } %>
     </div>
 

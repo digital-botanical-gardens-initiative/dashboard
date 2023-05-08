@@ -11,31 +11,15 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="./node_modules/@rdkit/rdkit/Code/MinimalLib/dist/RDKit_minimal.js"></script>
     <script>
-        window.initRDKitModule()
-          .then(function(RDKit) {
-            console.log("RDKit version: " + RDKit.version());
-            window.RDKit = RDKit;
-            /**
-             * The RDKit module is now loaded.
-             * You can use it anywhere.
-             */
-      
-            const drawmol = function() {
-                const drawer = document.getElementById("drawer");
-                const smi = drawer.getAttribute("data-smile");
-                console.log(smi);
-                const mol = RDKit.get_mol(smi);
-                const svg = mol.get_svg();
-                drawer.innerHTML = svg;
-            };
+    document.addEventListener('DOMContentLoaded', function () {
 
-      
-            // Call the drawmol function after the RDKit module is loaded
-            drawmol();
-          })
-          .catch(() => {
-            // handle loading errors here...
-          });
+      var mol = RDKitModule.get_mol(smile);
+      var dest = document.getElementById("smile_3D");
+      var svg = mol.get_svg();
+      dest.innerHTML = "<div id='drawing'>" + svg + "</div>";
+
+    }
+  
     </script>      
     <style>
         #molecule {
@@ -48,6 +32,23 @@
         .navbar {background-color: green;}
         tr {border-bottom: 2px solid #ddd;}
         table {width: 100%;}
+        .organisms-grid {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            grid-gap: 10px;
+        }
+        .organism-item {
+            list-style-type: none;
+            width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
+            overflow: hidden; /* make sure it hides the content that overflows */
+            white-space: nowrap; /* don't break the line */
+            text-overflow: ellipsis; /* give the beautiful '...' effect */
+        }
+        ul {
+            columns: 3;
+            -webkit-columns: 3;
+            -moz-columns: 3;
+        }
     </style>
 </head>
 <body>
@@ -59,8 +60,7 @@
     <h4>Chemical structures</h4>
     <h6>molecular formula: <%= formula %></h6>
     <div class="row">
-      <div class="col-md-6">
-        <div id="drawer" data-smile="<%= smile %>"></div>
+      <div id="smile_3D" class="col-md-6">
         <figcaption style="text-align: center;">3D</figcaption>
       </div>
     </div>
@@ -86,6 +86,17 @@
     </table> 
     <hr>
     <h4>Present in:</h4>
+    <div class="organisms-grid">
+      <ul>
+        <% organisms.forEach((organism, index) => { %>
+          <li class="organism-item">
+            <a href="/organism/<%= encodeURIComponent(organism)%>">
+              <%- organism %>
+            </a>
+          </li>
+        <% }); %>
+      </ul>
+    </div>
   </div>
 </body>
 </html>

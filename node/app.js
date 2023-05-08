@@ -111,7 +111,8 @@ app.get('/element/:id', async (req,res) =>{
     const query = `
       SELECT *
       FROM data
-      WHERE structure_nameTraditional = '${id}';`;
+      WHERE structure_nameTraditional = '${id}'
+      ORDER BY organism_name;`;
 
     const { rows } = await pool.query(query);
     const wikidata = rows[0].structure_wikidata;
@@ -123,8 +124,10 @@ app.get('/element/:id', async (req,res) =>{
     const superclass = rows[0].structure_taxonomy_classyfire_02superclass;
     const structure_class = rows[0].structure_taxonomy_classyfire_03class;
     const directparent = rows[0].structure_taxonomy_classyfire_04directparent;
+    const organisms = [...new Set(rows.map(row => row.organism_name))];    
+
   
-  res.render('element_visu', { id, wikidata, wikidata_id, formula, smile, smile_2d, kingdom, superclass, structure_class, directparent });
+  res.render('element_visu', { id, wikidata, wikidata_id, formula, smile, smile_2d, kingdom, superclass, structure_class, directparent, organisms });
 
   } catch (error) {
     console.error('Error:', error);
@@ -137,6 +140,7 @@ app.post('/element/:id', function(req, res){
   var molwt = mol.getMW();
   var mol2d = mol.Drawing2D();
   var remol = mol2d.replace( /svg:/g, ''  );
+
   res.send( "molwt is:"+molwt+"<br><br>"+"smiles is:"+ smiles+"<br><br>"+remol );
 });
 
@@ -230,6 +234,23 @@ app.get('/explore/text', (req,res) => {
     res.status(500).send('Oops! Looks like something went wrong...')
   }
 });
+
+app.get('/api/molecules', async (req, res) => {
+  try {
+    const query = `SELECT structure_taxonomy_classyfire_01kingdom, 
+                          structure_taxonomy_classyfire_02superclass, 
+                          structure_taxonomy_classyfire_03class, 
+                          structure_taxonomy_classyfire_04directparent, 
+                          structure_nameTraditional 
+                          FROM data`;
+    const { rows } = await pool.query(query);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 
 app.use((req,res) => {

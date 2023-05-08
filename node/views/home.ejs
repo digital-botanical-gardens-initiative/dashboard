@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Botanical Garden Initiative</title>
+  <title>DBGI - Home</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
   <script src="js/app.js" defer></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     .navbar {background-color: green;}
   </style>
@@ -21,7 +21,78 @@
     <h1>Welcome!</h1>
     <h3>Molecular diversity in the DBGI</h3>
     <button onclick="window.location.href='/element';">Browse Molecular Diversity</button>
+            <script>
+              document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                  const response = await fetch('/api/molecules');
+                  const data = await response.json();
+                  renderSunburst(data);
+                } catch (error) {
+                  console.error('Error fetching data:', error);
+                }
+              });
+
+              function renderSunburst(data) {
+                // Convert the data into a hierarchical structure
+                const hierarchyData = data.map(d => ({
+                  ...d,
+                  id: d.structure_nameTraditional,
+                  parentId: d.Class || d.SuperClass || d.kingdom
+                }));
+              
+                const root = d3
+                  .stratify()
+                  .id(d => d.id)
+                  .parentId(d => d.parentId)(hierarchyData)
+                  .sum(d => 1)
+                  .sort((a, b) => b.value - a.value);         
+
+
+                const width = 700;
+                const radius = width / 6;
+
+                const arc = d3.arc()
+                  .startAngle(d => d.x0)
+                  .endAngle(d => d.x1)
+                  .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                  .padRadius(radius * 1.5)
+                  .innerRadius(d => d.y0 * radius)
+                  .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+                const partition = data => {
+                  const root = d3.hierarchy(data)
+                    .sum(d => d.value)
+                    .sort((a, b) => b.value - a.value);
+                  return d3.partition()
+                    .size([2 * Math.PI, root.height + 1])
+                    (root);
+                };
+              
+                const color = d3.scaleOrdinal().range(d3.quantize(d3.interpolateRainbow, data.length + 1));
+              
+                const svg = d3.select("#sunburst_molecule")
+                  .append("svg")
+                  .attr("width", width)
+                  .attr("height", width)
+                  .attr("viewBox", `${-width / 2} ${-width / 2} ${width} ${width}`)
+                  .style("font", "10px sans-serif");
+              
+                const rootData = partition(root.data);
+              
+                svg.append("g")
+                  .selectAll("path")
+                  .data(rootData.descendants().filter(d => d.depth))
+                  .join("path")
+                  .attr("fill", d => { while (d.depth > 1) d = d.parent; return color(d.data.name); })
+                  .attr("d", arc)
+                  .append("title")
+                  .text(d => `${d.ancestors().map(d => d.data.name).reverse().join("/")}\n${d.value}`);
+              }             
+
+            </script>
+    <div id="sunburst_molecule"></div>
     <h3>Organism diversity in the DBGI</h3>
     <button onclick="window.location.href='/organism';">Browse Organism diversity</button>
+    <div></div>
 </body>
 </html>
