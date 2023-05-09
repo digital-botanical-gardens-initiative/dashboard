@@ -5,22 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DBGI - <%=id%></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <script src="js/app.js" defer></script>
+    <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <script src="./node_modules/@rdkit/rdkit/Code/MinimalLib/dist/RDKit_minimal.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-
-      var mol = RDKitModule.get_mol(smile);
-      var dest = document.getElementById("smile_3D");
-      var svg = mol.get_svg();
-      dest.innerHTML = "<div id='drawing'>" + svg + "</div>";
-
-    }
-  
-    </script>      
+        window
+          .initRDKitModule()
+          .then(function (RDKit) {
+            console.log("RDKit version: " + RDKit.version());
+            window.RDKit = RDKit;
+            /**
+             * The RDKit module is now loaded.
+             * You can use it anywhere.
+             */
+          })
+          .catch(() => {
+            // handle loading errors here...
+          });
+    </script>
     <style>
         #molecule {
           display: inline-block;
@@ -51,6 +54,12 @@
         }
     </style>
 </head>
+<script>
+  initRDKitModule().then(function (instance) {
+    RDKitModule = instance;
+    console.log("version: " + RDKitModule.version());
+  });
+</script>
 <body>
   <%- include('./partials/nav.ejs') %>
 
@@ -60,8 +69,21 @@
     <h4>Chemical structures</h4>
     <h6>molecular formula: <%= formula %></h6>
     <div class="row">
-      <div id="smile_3D" class="col-md-6">
-        <figcaption style="text-align: center;">3D</figcaption>
+      <div id="test">
+        <script>
+
+        function callback() {
+          var smile = '<%=smile%>'
+          var mol = RDKit.get_mol(smile);
+          var dest = document.getElementById("test");
+          var svg = mol.get_svg();
+          dest.innerHTML = "<div id='test'>hey!</div>";
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            callback();
+        });
+        </script>
       </div>
     </div>
     <hr>

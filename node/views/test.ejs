@@ -1,18 +1,22 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <script type="text/javascript" language="javascript" src="jsme/jsme.nocache.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
     <script>
-        //this function will be called after the JavaScriptApplet code has been loaded.
-        function jsmeOnLoad() {
-            jsmeApplet = new JSApplet.JSME("jsme_container", "380px", "340px");
+        function callback() {
+            var ob = document.getElementById("test");
+            ob.outerHTML = "<div id='test'>hey!</div>";
         }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            callback();
+        });
     </script>
 </head>
-
 <body>
-<div id="jsme_container"></div>
-
+    <h1>Test Page</h1>
+    <div id="test"></div>
 </body>
 </html>
