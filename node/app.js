@@ -3,10 +3,6 @@ const dotenv = require("dotenv");
 const RDKit=require('rdkit'); 
 const exploreRoutes = require('./routes/exploreRoutes');
 
-// Import the initRDKit function from the external script file
-const { initRDKit } = require("./routes/moleculeVisuRoutes.js");
-
-
 // import dotenv file
 dotenv.config();
 
@@ -131,23 +127,13 @@ app.get('/element/:id', async (req,res) =>{
     const organisms = [...new Set(rows.map(row => row.organism_name))];    
 
   
-  res.render('element_visu', { id, wikidata, wikidata_id, formula, smile, smile_2d, kingdom, superclass, structure_class, directparent, organisms });
+  res.render('elementVisu', { id, wikidata, wikidata_id, formula, smile, smile_2d, kingdom, superclass, structure_class, directparent, organisms });
 
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('Oops! Looks like something went wrong...')
   }
 })
-
-app.post('/element/:id', function(req, res){
-  var mol = RDKit.Molecule.fromSmiles( smiles );
-  var molwt = mol.getMW();
-  var mol2d = mol.Drawing2D();
-  var remol = mol2d.replace( /svg:/g, ''  );
-
-  res.send( "molwt is:"+molwt+"<br><br>"+"smiles is:"+ smiles+"<br><br>"+remol );
-});
-
 
 
 app.get('/organism', async (req, res) => {
@@ -201,7 +187,7 @@ app.get('/organism/:id', async (req,res) =>{
     const molecules = [...new Set(rows.map(row => row.structure_nametraditional))];    
 
   
-  res.render('organism_visu', { id, wikidata, wikidata_id, 
+  res.render('organismVisu', { id, wikidata, wikidata_id, 
                                 domain, kingdom, phylum, organism_class, 
                                 order, family, tribe, genus, 
                                 species, varietas, molecules});
@@ -213,31 +199,6 @@ app.get('/organism/:id', async (req,res) =>{
 })
 
 
-app.get('/explore', (req,res) => {
-  try{
-    var searchResult = req.searchResult;
-
-    res.render('explore', {title: 'Explore',
-                          results: searchResult.length,
-                          searchTerm: req.searchTerm,
-                          searchResult: searchResult,
-                          column: req.column});
-
-  } catch (error) {
-    console.error('Error: ', error);
-    res.status(500).send('Oops! Looks like something went wrong...')
-  }
-});
-
-app.get('/explore/text', (req,res) => {
-  try{
-    res.render('explore_text');
-
-  } catch (error) {
-    console.error('Error: ', error);
-    res.status(500).send('Oops! Looks like something went wrong...')
-  }
-});
 
 app.get('/api/molecules', async (req, res) => {
   try {

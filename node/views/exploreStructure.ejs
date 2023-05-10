@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DBGI - Browse Dataset</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="../app.js" defer></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var dropDown = document.getElementById("search_type");
+      dropDown.onchange = function () {
+        var selectedValue = this.value;
+        if (selectedValue === "by_text") {
+          window.location.href = "/explore/text";
+        } else if (selectedValue === "by_structure") {
+          window.location.href = "/explore/structure";
+        } else if (selectedValue === "SPARQL") {
+          window.location.href = "/explore/SPARQL"
+      }
+    }
+  });
+  </script>
+  <script type="text/javascript" language="javascript" src="/JSME_2022-09-26/jsme/jsme.nocache.js"></script>
+  <script>
+      function updateSMILES(smile) {
+        document.getElementById("smiles").value = smile;
+      }
+  </script>
+  <style>
+    .navbar {background-color: green;}
+  </style>
+</head>
+<body>
+    <%- include('./partials/nav.ejs') %>
+
+    <%- include('./partials/exploreDropdown.ejs') %>
+
+    <hr>
+
+    <form action="/explore/structure" method="POST">
+    <div name="jme" code="JME.class"  width=420 height=330>
+      You have to enable JavaScript in your browser to use JSME !
+    </div>
+    <button type="submit" onclick="updateSMILES(document.jme.smiles());">Search</button>
+    <input id="smiles" type="hidden" name="smiles" value="">
+    <br>
+    <div>Exact Search:
+      <input type="checkbox" name="exact" value="true" checked>
+    </div>
+    </form>
+    <br>
+    <% if (typeof results !== 'undefined' && results.length !== 0) { %>
+      <table class="table table-bordered table-striped">
+        <thead>
+          <tr>
+            <% columns.forEach(column => { %>
+              <th><%= column.column_name %></th>
+            <% }) %>
+          </tr>
+        </thead>
+        <tbody>
+          <% results.forEach(result => { %>
+            <tr>
+              <% columns.forEach(column => { %>
+                <% if (column.column_name === 'structure_wikidata' || column.column_name === 'organism_wikidata' || column.column_name === 'reference_wikidata') { %>
+                  <td><a href="<%= result[column.column_name] %>" target="_blank"><%= result[column.column_name].split("/").pop() %></a></td>
+                <% } else if (column.column_name === 'structure_nametraditional') { %>
+                  <td><a href="/element/<%= result[column.column_name] %>"><%= result[column.column_name] %></a></td>
+                <% } else { %>
+                  <td><%= result[column.column_name] %></td>
+                <% } %>
+              <% }) %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } else { %>
+      <h4> No results </h4>
+    <% } %>
+
+</body>
+</html>
