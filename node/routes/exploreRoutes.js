@@ -12,7 +12,6 @@ const myEngine = newEngine(); */
 
 
 
-
 const getTableColumns = async () => {
   const tableColumns = await db.query(`
     SELECT column_name
@@ -109,8 +108,5 @@ router.all('/explore/SPARQL', async (req,res) => {
     res.send('Error while executing SPARQL query');
   }
 }); */
-
-
-
 
 module.exports = router;

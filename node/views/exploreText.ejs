@@ -50,35 +50,7 @@
         </div>
       </form>
       <br>
-      <% if (typeof results !== 'undefined' && results.length !== 0) { %>
-        <table class="table table-bordered table-striped">
-          <thead>
-            <tr>
-              <% columns.forEach(column => { %>
-                <th><%= column.column_name %></th>
-              <% }) %>
-            </tr>
-          </thead>
-          <tbody>
-            <% results.forEach(result => { %>
-              <tr>
-                <% columns.forEach(column => { %>
-                  <% if (column.column_name === 'structure_wikidata' || column.column_name === 'organism_wikidata' || column.column_name === 'reference_wikidata') { %>
-                    <td><a href="<%= result[column.column_name] %>" target="_blank"><%= result[column.column_name].split("/").pop() %></a></td>
-                  <% } else if (column.column_name === 'structure_nametraditional') { %>
-                    <td><a href="/element/<%= result[column.column_name] %>"><%= result[column.column_name] %></a></td>
-                  <% } else { %>
-                    <td><%= result[column.column_name] %></td>
-                  <% } %>
-                <% }) %>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <h4> No results </h4>
-      <% } %>
-    </div>
+      <%- include('./partials/exploreTable.ejs') %>
 
 </body>
 </html>

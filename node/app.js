@@ -1,3 +1,5 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // should only be used for local development!!! Do not use this method in production environments, as it would expose the app to security risks.
+
 const express = require('express');
 const dotenv = require("dotenv");
 const RDKit=require('rdkit'); 
