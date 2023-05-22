@@ -2,12 +2,33 @@
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
+const axios = require('axios');
+
 
 router.use(express.urlencoded({ extended: true }));
 
+
+async function fetchImage(wikidata_id) {
+  const query_wikidata = encodeURIComponent(`
+    SELECT ?image WHERE {
+      wd:${wikidata_id} wdt:P18 ?image.
+    }
+  `);
+
+  const url = `https://query.wikidata.org/sparql?format=json&query=${query_wikidata}`;
+
+  try {
+    const response = await axios.get(url);
+    const imageUrl = response.data.results.bindings[0].image.value;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+
 router.get('/organism', async (req, res) => {
     try {
-      const query = `
+      const queryOrganism = `
         SELECT
         UPPER(SUBSTRING(organism_name, 1, 1)) AS first_letter,
         ARRAY_AGG(DISTINCT organism_name) AS organisms
@@ -17,7 +38,7 @@ router.get('/organism', async (req, res) => {
         ORDER BY first_letter;
       `;
   
-      const { rows } = await db.query(query);
+      const { rows } = await db.query(queryOrganism);
   
       // Convert the result to an object
       const groupedOrganisms = {};
@@ -35,12 +56,12 @@ router.get('/organism', async (req, res) => {
 router.get('/organism/:id', async (req,res) =>{
     try{
       const id = req.params.id;
-      const query = `
+      const queryVisu = `
         SELECT *
         FROM data
         WHERE organism_name = '${id}';`;
   
-      const { rows } = await db.query(query);
+      const { rows } = await db.query(queryVisu);
       const wikidata = rows[0].organism_wikidata;
       const wikidata_id = wikidata.split("/").pop();
       const domain = rows[0].organism_taxonomy_01domain;
@@ -53,13 +74,29 @@ router.get('/organism/:id', async (req,res) =>{
       const genus = rows[0].organism_taxonomy_08genus;
       const species = rows[0].organism_taxonomy_09species;
       const varietas = rows[0].organism_taxonomy_10varietas;
-      const molecules = [...new Set(rows.map(row => row.structure_nametraditional))];    
+      const molecules = [...new Set(rows.map(row => row.structure_nametraditional))];  
+
+
+      const query_wikidata = encodeURIComponent(`
+      SELECT ?image WHERE {
+        wd:${wikidata_id} wdt:P18 ?image.
+      }
+    `);
   
+      const url = `https://query.wikidata.org/sparql?format=json&query=${query_wikidata}`;
+
+      const response = await axios.get(url);
+      var imageUrl = null;
+
+      if (response.data.results.bindings.length !== 0) {
+        imageUrl = response.data.results.bindings[0].image.value;
+      }
+
     
-    res.render('organismVisu', { id, wikidata, wikidata_id, 
-                                  domain, kingdom, phylum, organism_class, 
-                                  order, family, tribe, genus, 
-                                  species, varietas, molecules});
+    res.render('organismVisu', {id, wikidata, wikidata_id, 
+                                domain, kingdom, phylum, organism_class, 
+                                order, family, tribe, genus, 
+                                species, varietas, molecules, imageUrl});
   
     } catch (error) {
       console.error('Error:', error);

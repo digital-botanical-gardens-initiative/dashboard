@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DBGI element</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
   <script src="js/app.js" defer></script>
@@ -40,35 +41,6 @@
 });
 
   </script>
-  <style>
-    .navbar {background-color: green;}
-    .letter {
-      cursor: pointer;
-      padding: 0 5px;
-    }
-    .letter:hover {
-      text-decoration: underline;
-    }
-    .molecules {
-    display: none;
-    }
-    .element-item {
-      list-style-type: none;
-      width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
-      overflow: hidden; /* make sure it hides the content that overflows */
-      white-space: nowrap; /* don't break the line */
-      text-overflow: ellipsis; /* give the beautiful '...' effect */
-    }
-    .element-grid {
-            display: grid;
-            grid-template-columns: repeat(3, auto);
-    }
-    ul {
-      columns: 3;
-      -webkit-columns: 3;
-      -moz-columns: 3;
-    }
-  </style>
 </head>
 <body>
   <%- include('./partials/nav.ejs') %>
@@ -88,9 +60,9 @@
       <div id="molecules-<%= letter %>" class="molecules">
         <h2><%= letter %></h2>
             <div class="element-grid">
-              <ul>
+              <ul class="element-list">
                 <% groupedMolecules[letter].forEach((molecule, index) => { %>
-                <li class="element-item">
+                <li class="molecule-item">
                   <a href="/element/<%= encodeURIComponent(molecule) %>">
                     <%- molecule %>
                   </a>

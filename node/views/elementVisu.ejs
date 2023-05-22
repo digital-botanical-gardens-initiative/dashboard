@@ -5,40 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DBGI - <%=id%></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
     <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script type="text/javascript" language="javascript" src="/JSME_2022-09-26/jsme/jsme.nocache.js"></script>
-    <style>
-        #molecule {
-          display: inline-block;
-          background-color: white;
-          border: 1px solid #ccc;
-          padding: 10px;
-          margin: 10px;
-        }
-        .navbar {background-color: green;}
-        tr {border-bottom: 2px solid #ddd;}
-        table {width: 100%;}
-        .organisms-grid {
-            display: grid;
-            grid-template-columns: repeat(3, auto);
-            grid-gap: 10px;
-        }
-        .organism-item {
-            list-style-type: none;
-            width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
-            overflow: hidden; /* make sure it hides the content that overflows */
-            white-space: nowrap; /* don't break the line */
-            text-overflow: ellipsis; /* give the beautiful '...' effect */
-        }
-        ul {
-            columns: 3;
-            -webkit-columns: 3;
-            -moz-columns: 3;
-        }
-    </style>
 </head>
 <body>
   <%- include('./partials/nav.ejs') %>
@@ -88,7 +60,7 @@
     <hr>
     <h4>Present in:</h4>
     <div class="organisms-grid">
-      <ul>
+      <ul class="organisms-list">
         <% organisms.forEach((organism, index) => { %>
           <li class="organism-item">
             <a href="/organism/<%= encodeURIComponent(organism)%>">

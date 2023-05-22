@@ -5,32 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DBGI - <%= id%></title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
     <script src="js/app.js" defer></script>     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-    <style>
-        .navbar {background-color: green;}
-        tr {border-bottom: 2px solid #ddd;}
-        table {width: 100%;}
-        .molecules-grid {
-            display: grid;
-            grid-template-columns: repeat(2, auto);
-            grid-gap: 10px;
-        }
-        .molecule-item {
-            list-style-type: none;
-            width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
-            overflow: hidden; /* make sure it hides the content that overflows */
-            white-space: nowrap; /* don't break the line */
-            text-overflow: ellipsis; /* give the beautiful '...' effect */
-        }
-        ul {
-            columns: 2;
-            -webkit-columns: 2;
-            -moz-columns: 2;
-        }
-    </style>
 </head>
 <body>
 
@@ -39,6 +18,9 @@
     <div class="container">
         <h2><%= id %> (<a href="<%= wikidata %>"><%= wikidata_id %></a>)</h2>
         <br>
+        <% if (imageUrl) { %>
+            <img src="<%= imageUrl %>" title="<%= wikidata_id %>" class="center">
+        <% } %>
         <hr>
         <h4>Taxonomy</h4>
             <table>
@@ -86,7 +68,7 @@
         <hr>
         <h4>Molecules:</h4>
         <div class="molecules-grid">
-            <ul>
+            <ul class="molecules-list">
               <% molecules.forEach((molecule, index) => { %>
                 <li class="molecule-item">
                   <a href="/element/<%= encodeURIComponent(molecule)%>">

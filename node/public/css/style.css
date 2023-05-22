@@ -1,0 +1,113 @@
+/*navbar*/
+.navbar {background-color: green;}
+
+/*figures*/
+.node circle {
+        fill: #fff;
+        stroke: steelblue;
+        stroke-width: 3px;
+    }
+.node text {
+    font: 12px sans-serif;
+}
+.link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 2px;
+}
+
+/*explore grid*/
+tr {border-bottom: 2px solid #ddd;}
+table {width: 100%;}
+
+/*molecules*/
+.molecules-grid {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    grid-gap: 10px;
+}
+.molecule-item {
+    list-style-type: none;
+    width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
+    overflow: hidden; /* make sure it hides the content that overflows */
+    white-space: nowrap; /* don't break the line */
+    text-overflow: ellipsis; /* give the beautiful '...' effect */
+}
+ul.molecules-list {
+    columns: 2;
+    -webkit-columns: 2;
+    -moz-columns: 2;
+}
+.molecules {
+    display: none;
+}
+.element-grid {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+}
+.center {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+}
+ul.element-list {
+    columns: 3;
+    -webkit-columns: 3;
+    -moz-columns: 3;
+  }
+
+/*Letter list*/
+.letter {
+  cursor: pointer;
+  padding: 0 5px;
+}
+.letter:hover {
+  text-decoration: underline; 
+}
+
+/*organism*/
+.organisms {
+display: none;
+}
+.organism-item {
+  list-style-type: none;
+}
+.organism-grid {
+        display: grid;
+        grid-template-columns: repeat(4, auto);
+    }
+ul.organism-list {
+  columns: 4;
+  -webkit-columns: 4;
+  -moz-columns: 4;
+}
+.hidden{
+    display: none;
+    }
+
+/*elementVisu*/
+#molecule {
+    display: inline-block;
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 10px;
+    }
+.organisms-grid {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    grid-gap: 10px;
+}
+.organism-item {
+    list-style-type: none;
+    width: 25em; /* the element needs a fixed width (in px, em, %, etc) */
+    overflow: hidden; /* make sure it hides the content that overflows */
+    white-space: nowrap; /* don't break the line */
+    text-overflow: ellipsis; /* give the beautiful '...' effect */
+}
+ul.organisms-list {
+    columns: 3;
+    -webkit-columns: 3;
+    -moz-columns: 3;
+}

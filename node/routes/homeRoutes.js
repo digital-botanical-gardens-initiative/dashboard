@@ -6,7 +6,7 @@ const db = require('./db');
 router.use(express.urlencoded({ extended: true }));
 
 router.get('/', async (req, res) => {
-    const result = await db.query(`
+    const resultMol = await db.query(`
         SELECT 
             structure_taxonomy_npclassifier_01pathway as pathway,
             structure_taxonomy_npclassifier_02superclass as superclass,
@@ -16,11 +16,11 @@ router.get('/', async (req, res) => {
         GROUP BY pathway, superclass, class
     `);
 
-    const data = result.rows;
+    const dataMol = resultMol.rows;
 
-    const tree = { name: "Root", children: [] };
-    data.forEach(row => {
-        let currentLevel = tree.children;
+    const treeMol = { name: "Root", children: [] };
+    dataMol.forEach(row => {
+        let currentLevel = treeMol.children;
         [row.pathway, row.superclass, row.class].forEach(level => {
             let existingPath = currentLevel.find(d => d.name === level);
             if (existingPath) {
@@ -33,7 +33,39 @@ router.get('/', async (req, res) => {
         });
     });
 
-    res.render('home', { tree });
+
+    const resultOrg = await db.query(`
+        SELECT 
+        organism_taxonomy_01domain as domain,
+        organism_taxonomy_02kingdom as kingdom,
+        organism_taxonomy_03phylum as phylum,
+        organism_taxonomy_04class as class,
+        organism_taxonomy_06family as family,
+        organism_taxonomy_07tribe as tribe,
+        organism_taxonomy_08genus as genus
+        FROM data
+        GROUP BY domain, kingdom, phylum, class, family, tribe, genus
+    `);
+
+    const dataOrg = resultOrg.rows;
+
+    const treeOrg = { name: "Root", children: [] };
+    dataOrg.forEach(row => {
+        let currentLevel = treeOrg.children;
+        [row.domain, row.kingdom, row.phylum, row.class, row.family,
+        row.tribe, row.genus].forEach(level => {
+            let existingPath = currentLevel.find(d => d.name === level);
+            if (existingPath) {
+                currentLevel = existingPath.children;
+            } else {
+                const newPath = { name: level, children: [] };
+                currentLevel.push(newPath);
+                currentLevel = newPath.children;
+            }
+        });
+    });
+
+    res.render('home', { treeMol, treeOrg });
 });
 
 

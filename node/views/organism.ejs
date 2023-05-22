@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DBGI element</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
   <script src="js/app.js" defer></script>
@@ -39,31 +40,6 @@
       });
 
   </script>
-  <style>
-    .navbar {background-color: green;}
-    .letter {
-      cursor: pointer;
-      padding: 0 5px;
-    }
-    .letter:hover {
-      text-decoration: underline; 
-    }
-    .organisms {
-    display: none;
-    }
-    .organism-item {
-      list-style-type: none;
-    }
-    .organism-grid {
-            display: grid;
-            grid-template-columns: repeat(4, auto);
-        }
-    ul {
-      columns: 4;
-      -webkit-columns: 4;
-      -moz-columns: 4;
-    }
-  </style>
 </head>
 <body>
   <%- include('./partials/nav.ejs') %>
@@ -82,7 +58,7 @@
       <div id="organisms-<%= letter %>" class="organisms">
         <h2><%= letter %></h2>
             <div class="organism-grid">
-              <ul>
+              <ul class="organism-list">
                 <% groupedOrganisms[letter].forEach((organism, index) => { %>
                 <li class="organism-item">
                   <a href="/organism/<%= encodeURIComponent(organism) %>">
