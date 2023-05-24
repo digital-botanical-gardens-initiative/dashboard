@@ -12,65 +12,41 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-      document.addEventListener('DOMContentLoaded', function () {
-      const alphabetContainer = document.querySelector('.alphabet');
-      const organismsContainers = document.querySelectorAll('.organism-container .organisms');
-      
-      function showOrganismList(letter) {
-        // Hide all organism containers
-        organismsContainers.forEach(organism => {
-          organism.style.display = 'none';
-        });
-      
-        // Show the selected organism container
-        const selectedMoleculeContainer = document.querySelector(`#organisms-${letter}`);
-        if (selectedMoleculeContainer) {
-          selectedMoleculeContainer.style.display = 'block';
-        }
-      }
-    
-      alphabetContainer.addEventListener('click', function (event) {
-        if (event.target.classList.contains('letter')) {
-          event.preventDefault();
-          const letter = event.target.textContent;
-          showOrganismList(letter);
-        }
-      });
-      });
-
-  </script>
 </head>
 <body>
   <%- include('./partials/nav.ejs') %>
 
   <h1>Organisms list</h1>
-
-  <div class="alphabet">
-    <% let i = 65; %>
-    <% for (; i <= 90; i++) { %>
-      <span class="letter"><%= String.fromCharCode(i) %></span>
+  <div>
+    <form action="/organism" method="POST">
+      <input type="text" name="searchTerm" placeholder="Search..." required />
+      <button type="submit">submit</button>
+    </form>
+    <hr>
+    <div>
+    <% if (typeof rows !== 'undefined' && rows.length !== 0) { %>
+    <ul>
+      <% rows.forEach(row => { %>
+        <li>
+          <a href="/organism/<%= encodeURIComponent(row.organism) %>"><%= row.organism %></a>
+      <% }) %>
+        </li>
+    </ul>
+    <% } else { %>
+      <h4> No results </h4>
     <% } %>
-  </div>
-  <div class="organism-container">
-    <% let isFirstLetter = true; %>
-    <% for (const letter in groupedOrganisms) { %>
-      <div id="organisms-<%= letter %>" class="organisms">
-        <h2><%= letter %></h2>
-            <div class="organism-grid">
-              <ul class="organism-list">
-                <% groupedOrganisms[letter].forEach((organism, index) => { %>
-                <li class="organism-item">
-                  <a href="/organism/<%= encodeURIComponent(organism) %>">
-                    <%- organism %>
-                  </a>
-                </li>
-                 <% }) %> 
-              </ul>
-            </div>
-      </div>
-      <% isFirstLetter = false; %>
-    <% } %>
+    </div>
+    <hr>
+    <div>
+      <h4> Most Found: </h4>
+      <ul class="organisms-list">
+        <% examples.forEach(row => { %>
+          <li>
+            <a href="/organism/<%= encodeURIComponent(row.organism)%>"><%= row.organism%></a>
+            <% }) %>
+          </li>
+      </ul>
+    </div>
   </div>
 </body>
 

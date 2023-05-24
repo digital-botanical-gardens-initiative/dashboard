@@ -26,27 +26,37 @@ async function fetchImage(wikidata_id) {
 }
 
 
-router.get('/organism', async (req, res) => {
+router.all('/organism', async (req, res) => {
     try {
-      const queryOrganism = `
+      const query_example = `
         SELECT
-        UPPER(SUBSTRING(organism_name, 1, 1)) AS first_letter,
-        ARRAY_AGG(DISTINCT organism_name) AS organisms
+        organism_name AS organism
         FROM data
         WHERE organism_name IS NOT NULL
-        GROUP BY first_letter
-        ORDER BY first_letter;
+        GROUP BY organism
+        ORDER BY COUNT(*) DESC
+        LIMIT 12;
       `;
+
+      const examples = await db.query(query_example);
   
-      const { rows } = await db.query(queryOrganism);
+      if (req.method == 'POST'){
+        let searchTerm = req.body.searchTerm.toUpperCase();
+
+        const queryOrga = `
+          SELECT
+          DISTINCT organism_name AS organism
+          FROM data
+          WHERE organism_name ILIKE '${searchTerm}'
+          ORDER BY organism;
+        `
+        const { rows } = await db.query(queryOrga);
+        
   
-      // Convert the result to an object
-      const groupedOrganisms = {};
-      rows.forEach(row => {
-        groupedOrganisms[row.first_letter] = row.organisms;
-      });
-  
-      res.render('organism', { groupedOrganisms });
+        res.render('organism', { rows, examples: examples.rows });
+      } else {
+        res.render('organism', {examples: examples.rows});
+      }
     } catch (error) {
       console.error('Error fetching organisms:', error);
       res.status(500).send('Oops! Looks like something went wrong...')

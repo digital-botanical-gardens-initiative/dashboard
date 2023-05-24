@@ -12,67 +12,41 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function () {
-  const alphabetContainer = document.querySelector('.alphabet');
-  const moleculesContainers = document.querySelectorAll('.molecule-container > .molecules');
-
-  function showMoleculeList(letter) {
-    // Hide all molecule containers
-    moleculesContainers.forEach(molecule => {
-      molecule.style.display = 'none';
-    });
-
-    // Show the selected molecule container
-    const selectedMoleculeContainer = document.querySelector(`#molecules-${letter}`);
-    if (selectedMoleculeContainer) {
-      selectedMoleculeContainer.style.display = 'block';
-    }
-  }
-
-  alphabetContainer.addEventListener('click', function (event) {
-    const target = event.target;
-    if (target.classList.contains('letter')) {
-      event.preventDefault();
-      const letter = target.textContent.trim();
-      showMoleculeList(letter);
-    }
-  });
-});
-
-  </script>
 </head>
 <body>
   <%- include('./partials/nav.ejs') %>
 
-  <h1>Molecules list</h1>
-
-  <div class="alphabet">
-    <span class='letter'>123</span>
-    <% let i = 65; %>
-    <% for (; i <= 90; i++) { %>
-      <span class="letter"> <%= String.fromCharCode(i) %></span>
+  <h1>Chemical compounds list</h1>
+  <div>
+    <form action="/element" method="POST">
+      <input type="text" name="searchTerm" placeholder="Search..." required />
+      <button type="submit">submit</button>
+    </form>
+    <hr>
+    <div>
+    <% if (typeof rows !== 'undefined' && rows.length !== 0) { %>
+    <ul>
+      <% rows.forEach(row => { %>
+        <li>
+          <a href="/element/<%= encodeURIComponent(row.molecules) %>"><%= row.molecules %></a>
+      <% }) %>
+        </li>
+    </ul>
+    <% } else { %>
+      <h4> No results </h4>
     <% } %>
-  </div>
-  <div class="molecule-container">
-    <% let isFirstLetter = true; %>
-    <% for (const letter in groupedMolecules) { %>
-      <div id="molecules-<%= letter %>" class="molecules">
-        <h2><%= letter %></h2>
-            <div class="element-grid">
-              <ul class="element-list">
-                <% groupedMolecules[letter].forEach((molecule, index) => { %>
-                <li class="molecule-item">
-                  <a href="/element/<%= encodeURIComponent(molecule) %>">
-                    <%- molecule %>
-                  </a>
-                </li>
-                  <% }) %>
-              </ul>
-            </div>
-      </div>
-      <% isFirstLetter = false; %>
-    <% } %>
+    </div>
+    <hr>
+    <div>
+      <h4> Most Found: </h4>
+      <ul class="molecules-list">
+        <% examples.forEach(row => { %>
+          <li>
+            <a href="/element/<%= encodeURIComponent(row.structure_nametraditional)%>"><%= row.structure_nametraditional%></a>
+            <% }) %>
+          </li>
+      </ul>
+    </div>
   </div>
 </body>
 

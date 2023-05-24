@@ -21,14 +21,15 @@
     <%- include('./partials/nav.ejs') %>
 
     <h1>Welcome!</h1>
+    <div class="row">
+        <div class="column">
     <h3>Molecular diversity in the DBGI</h3>
     <button onclick="window.location.href='/element';">Browse Molecular Diversity</button>
-    <div>
     <script src="https://d3js.org/d3.v5.min.js"></script>
     <script>
         var treeMol = <%- JSON.stringify(treeMol) %>;
     
-        var diameter = 1000;
+        var diameter = 500;
         var radius = diameter / 2;
         var innerRadius = radius - 120;
     
@@ -37,27 +38,20 @@
             .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
     
         var root = d3.hierarchy(treeMol);
+        let treeData = tree(root);
     
-        tree(root);
-    
+        let nodes = treeData.descendants();
+        let links = treeData.links();
+
         var svg = d3.select("body").append("svg")
-            .attr("width", 1000)
-            .attr("height", 1000)
+            .attr("width", 500)
+            .attr("height", 500)
             .append("g")
             .attr("transform", "translate(" + radius + "," + radius + ")");
-    
-/*         var zoom = d3.zoom()
-            .scaleExtent([1, 10])  // This defines the minimum and maximum zoom (scale)
-            .on("zoom", zoomed);
-    
-        function zoomed() {
-            svg.attr("transform", d3.event.transform);
-        }
-    
-        svg.call(zoom); */
+
     
         var link = svg.selectAll(".link")
-            .data(root.links())
+            .data(links)
             .enter().append("path")
             .attr("class", "link")
             .attr("d", d3.linkRadial()
@@ -65,12 +59,10 @@
                 .radius(function(d) { return d.y; }));
     
         var node = svg.selectAll(".node")
-            .data(root.descendants())
+            .data(nodes)
             .enter().append("g")
             .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
-            .attr("transform", function(d) { return "rotate(" + (d.x * 180 / Math.PI - 90) + ")translate(" + d.y + ")"; })
-            .style("stroke", "white")
-            .style("stroke-width", "2px");
+            .attr("transform", function(d) { return "rotate(" + (d.x * 180 / Math.PI - 90) + ")translate(" + d.y + ")"; });
     
         node.append("circle")
             .attr("r", 4.5);
@@ -82,17 +74,16 @@
             .attr("text-anchor", function(d) { return d.x < Math.PI === !d.children ? "start" : "end"; })
             .attr("transform", function(d) { return d.x >= Math.PI ? "rotate(180)" : null; })
             .text(function(d) { return d.children ? d.data.name : ""; });  // Only render the name if the node has children
-
     
     </script>
     </div>
+    <div class="column">
     <h3>Organism diversity in the DBGI</h3>
     <button onclick="window.location.href='/organism';">Browse Organism diversity</button>
-    <div>
     <script>
         var treeOrg = <%- JSON.stringify(treeOrg) %>;
     
-        var diameter = 1000;
+        var diameter = 500;
         var radius = diameter / 2;
         var innerRadius = radius - 120;
     
@@ -105,8 +96,8 @@
         tree(root);
     
         var svg = d3.select("body").append("svg")
-            .attr("width", 1000)
-            .attr("height", 1000)
+            .attr("width", 500)
+            .attr("height", 500)
             .append("g")
             .attr("transform", "translate(" + radius + "," + radius + ")");
     
@@ -137,6 +128,7 @@
 
     
     </script>
+    </div>
     </div>
 </body>
 </html>

@@ -5,32 +5,41 @@ const db = require('./db');
 
 router.use(express.urlencoded({ extended: true }));
 
-router.get('/element', async (req, res) => {
-    try {
+router.all('/element', async (req, res) => {
+  try {
+
+    const query_example = `
+    SELECT structure_nameTraditional
+    FROM data
+    WHERE structure_nameTraditional IS NOT NULL
+    GROUP BY structure_nameTraditional
+    ORDER BY COUNT(*) DESC
+    LIMIT 12;
+    `;
+
+    const examples  = await db.query(query_example);
+
+    if (req.method === 'POST') {
+      let searchTerm = req.body.searchTerm.toUpperCase();
       const query = `
-        SELECT
-        UPPER(SUBSTRING(structure_nameTraditional, 1, 1)) AS first_letter,
-        ARRAY_AGG(DISTINCT structure_nameTraditional) AS molecules
-        FROM data
-        WHERE structure_nameTraditional IS NOT NULL
-        GROUP BY first_letter
-        ORDER BY first_letter;
+          SELECT
+          DISTINCT structure_nameTraditional AS molecules
+          FROM data
+          WHERE structure_nameTraditional ILIKE '${searchTerm}%'
+          ORDER BY molecules;
       `;
-  
+
       const { rows } = await db.query(query);
-  
-      // Convert the result to an object
-      const groupedMolecules = {};
-      rows.forEach(row => {
-        groupedMolecules[row.first_letter] = row.molecules;
-      });
-  
-      res.render('element', { groupedMolecules });
-    } catch (error) {
+
+      res.render('element', { rows , examples: examples.rows});
+    } else {
+      res.render('element', {examples : examples.rows});
+    }
+  } catch (error) {
       console.error('Error fetching elements:', error);
       res.status(500).send('Oops! Looks like something went wrong...')
-    }
-  });
+  }
+});
   
   
 router.get('/element/:id', async (req,res) =>{

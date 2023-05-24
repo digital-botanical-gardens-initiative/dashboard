@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DBGI - Browse Dataset</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -34,6 +35,98 @@
   </script>
   <style>
     .navbar {background-color: green;}
+    /* Style the tab */
+    .tab {
+      overflow: hidden;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+      width: 37%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Style the buttons inside the tab */
+    .tab button {
+      background-color: inherit;
+      float: left;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      transition: 0.3s;
+      font-size: 17px;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+      background-color: #ddd;
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+      background-color: #ccc;
+    }
+
+    /* Style the tab content */
+    .tabcontent {
+      display: none;
+      padding: 6px 12px;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+    .slider {
+      margin-right: 10%;
+      margin-left: 10%;
+      width: 80%;
+      padding-left: 5%;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0px 15px 40px #7E6D5766;
+    }
+    .slider p {
+      font-size: 20px;
+      font-weight: 600;
+      padding-left: 30px;
+      color: black;
+    }
+    .slider input[type="range"] {
+      -webkit-appearance:none !important;
+      width: 90%;
+      height: 2px;
+      background: black;
+      border: none;
+      outline: none;
+    }
+    .slider input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none !important;
+      width: 30px;
+      height:30px;
+      background: black;
+      border: 2px solid black;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .slider input[type="range"]::-webkit-slider-thumb:hover {
+      background: black;
+    }
+
+    .jsme {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .submit {
+      color: white;
+      background-color: green;
+      width: 60%;
+      margin-left: 20%;
+      margin-right: 20%;
+    }
+    .center {
+      margin-right: auto;
+      margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -44,16 +137,96 @@
     <hr>
 
     <form action="/explore/structure" method="POST">
-    <div name="jme" code="JME.class"  width=420 height=330>
+    <div class="jsme" name="jme" code="JME.class" width=420 height=330>
       You have to enable JavaScript in your browser to use JSME !
     </div>
-    <button type="submit" onclick="updateSMILES(document.jme.smiles());">Search</button>
-    <input id="smiles" type="hidden" name="smiles" value="">
     <br>
+    <div class="tab">
+      <button class="tablinks" onclick="openTab(event,'exact_match')">Exact match</button>
+      <button class="tablinks" onclick="openTab(event,'sub_search')">Substructure search</button>
+      <button class="tablinks" onclick="openTab(event,'sim_search')">Similarity search</button>
+    </div>
+    
+    <div id="exact_match" class="tabcontent">
+      <br>
+      <h3>Exact match type: using InChI (recommended) or SMILES</h3>
+      <label class="container">
+        <input type="radio" checked="checked" name="radio">
+        Exact match (by InChI)
+        <span class="checkmark"></span>
+      </label>
+      <label class="container">
+        <input type="radio" name="radio">
+        Exact match (by canonical SMILES)
+        <span class="checkmark"></span>
+      </label>
+    </div>
+    
+    <div id="sub_search" class="tabcontent">
+      <br>
+      <h3>Substructure matching algorithm</h3>
+      <label class="container">
+        <input type="radio" checked="checked" name="radio">
+        Default substructure search (Ullmann algorithm)
+        <span class="checkmark"></span>
+      </label>
+      <label class="container">
+        <input type="radio" name="radio">
+        Substructure search with depth-first (DF) pattern
+        <span class="checkmark"></span>
+      </label>
+      <label class="container">
+        <input type="radio" name="radio">
+        Substructure search with Vento-Foggia algorithm
+        <span class="checkmark"></span>
+      </label>
+    </div>
+    
+    <div id="sim_search" class="tabcontent">
+      <br>
+      <h3>Select Tanimoto similarity threshold (in %)</h3>
+      <div class="slider">
+        <br>
+        <input type="range" min="0" max="100" value="50" oninput="rangeValue.innerText = this.value">
+        <p id="rangeValue">50</p>
+      </div>
+    </div>
+    
+    <hr>
+    <div class="center">
+    (Optional) Structure search only in a taxonomic group:
+    <input type="text" class="center">
+    </div>
+    <hr>
+
     <div>Exact Search:
       <input type="checkbox" name="exact" value="true" checked>
     </div>
+    <br>
+    <button class="submit" type="submit" onclick="updateSMILES(document.jme.smiles());"><i class="fa fa-search"></i> Search</button>
+    <input id="smiles" type="hidden" name="smiles" value="">
+    <br>
+
     </form>
+
+    <script>
+      function openTab(evt, tab) {
+        evt.preventDefault();
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tab).style.display = "block";
+        evt.currentTarget.className += " active";
+      }
+    </script>
+
+
     <br>
     <%- include('./partials/exploreTable.ejs') %>
 
