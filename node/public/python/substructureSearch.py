@@ -17,7 +17,8 @@ try:
                        if Chem.MolFromSmiles(smiles).HasSubstructMatch(query_molecule)]
 
     print(f"Found {len(matching_smiles)} matches", file=sys.stderr)
-
+    
+    """
     print("Converting matching SMILES strings to molecules for MCS finding", file=sys.stderr)
     matching_molecules = [Chem.MolFromSmiles(smiles) for smiles in matching_smiles]
 
@@ -25,7 +26,7 @@ try:
     mcs_result = rdFMCS.FindMCS(matching_molecules)
 
     print("Printing the MCS to stderr for debugging", file=sys.stderr)
-    print(mcs_result.smartsString, file=sys.stderr)
+    print(mcs_result.smartsString, file=sys.stderr) """
 
     print("Printing matching SMILES strings to stdout", file=sys.stderr)
     print('\n'.join(matching_smiles))

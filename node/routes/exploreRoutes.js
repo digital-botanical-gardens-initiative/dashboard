@@ -4,7 +4,14 @@ const router = express.Router();
 const db = require('./db');
 const fetch = require('node-fetch');
 const { spawn } = require('child_process');
+/* const redis = require('redis');
+const { promisify } = require('util');
 
+const client = redis.createClient(); // This line may need to be configured based on your Redis setup
+
+// Convert Redis client methods to Promises, to allow us to use async/await syntax
+client.getAsync = promisify(client.get).bind(client);
+client.setAsync = promisify(client.set).bind(client); */
 
 router.use(express.urlencoded({ extended: true }));
 
@@ -23,8 +30,18 @@ const getTableColumns = async () => {
   return tableColumns.rows;
 };
 
-async function sendDataPython(query, smiles) {
-  console.time('sendDataPython');
+async function sendDataPython(script, query, smiles, tanimoto = 1) {
+/*   console.time('sendDataPython');
+  let cacheKey = `sendDataPython:${query}:${smiles}`;
+  let cachedResult = await client.getAsync(cacheKey);
+  
+  if (cachedResult) {
+    console.log("Cache hit for", cacheKey);
+    return JSON.parse(cachedResult);
+  }
+
+  console.log("Cache miss for", cacheKey); */
+
   return new Promise(async (resolve, reject) => {
     console.time('db.query');
     // Fetch SMILES strings from the database
@@ -35,7 +52,7 @@ async function sendDataPython(query, smiles) {
     
     console.time('spawn process');
     // Call Python script to perform substructure search
-    const process = spawn('python3', ['public/python/substructureSearch.py', smiles]);
+    const process = spawn('python3', [script, smiles, tanimoto]);
     process.stdin.write(smilesListMapped.join('\n'));
     process.stdin.on('finish', () => {
       console.log('Finished writing to stdin');
@@ -55,6 +72,11 @@ async function sendDataPython(query, smiles) {
       // Split the output into a list of SMILES strings
       matchingSmiles = matchingSmiles.split('\n');
       console.log('Python process finished');
+      
+      // Cache the result before resolving
+      /* client.setAsync(cacheKey, JSON.stringify(matchingSmiles))
+        .catch(err => console.error('Error caching data:', err));
+       */
       resolve(matchingSmiles);
     });
     
@@ -69,7 +91,18 @@ async function sendDataPython(query, smiles) {
 
 
 
-async function handleExactMatch(radio, smiles, group, max) {
+
+async function handleExactMatch(radio, smiles, group, max, tanimoto) {
+  let cacheKey = `exactMatch:${radio}:${smiles}:${group}:${max}`;
+  let cachedResult = await client.getAsync(cacheKey);
+
+  if (cachedResult) {
+    console.log("Cache hit for", cacheKey);
+    return JSON.parse(cachedResult);
+  }
+  
+  console.log("Cache miss for", cacheKey);
+
   let InChi;
   // Promisify the Python spawn process
   const getInChi = new Promise((resolve, reject) => {
@@ -95,7 +128,7 @@ async function handleExactMatch(radio, smiles, group, max) {
   if (radio === 'structure_inchi' || radio === 'structure_smiles') {
     let structure = radio === 'structure_inchi' ? InChi : smiles;
     if (group) {
-      return await db.query(`
+      let result = await db.query(`
       SELECT * FROM data
       WHERE ${radio} = $1 AND 
       $2 = ANY (array[organism_taxonomy_01domain, 
@@ -110,16 +143,36 @@ async function handleExactMatch(radio, smiles, group, max) {
                       organism_taxonomy_10varietas])
       LIMIT $3
       `, [structure, group, max]);
+      if (result){
+        await client.setAsync(cacheKey, JSON.stringify(result));
+      }
+      return result;
     } else {
-      return await db.query(`SELECT * FROM data WHERE ${radio} = $1 LIMIT $2`, [structure, max]);
-    }
+      let result = await db.query(`SELECT * FROM data WHERE ${radio} = $1 LIMIT $2`, [structure, max]);
+  
+      /* if (result) {
+        // If the database query is successful, cache the result
+        await client.setAsync(cacheKey, JSON.stringify(result));
+      } */
+      
+      return result;    
+    } 
   }
   return { rows: [] };
 }
 
 
 // Function to handle 'sub_search' tab
-async function handleSubSearch(radio, smiles, group, max) {
+async function handleSubSearch(radio, smiles, group, max, tanimoto) {
+/*   let cacheKey = `subSearch:${radio}:${smiles}:${group}:${max}`;
+  let cachedResult = await client.getAsync(cacheKey);
+
+  if (cachedResult) {
+    console.log("Cache hit for", cacheKey);
+    return JSON.parse(cachedResult);
+  }
+  
+  console.log("Cache miss for", cacheKey); */
 
   if (group) {
     const query = `SELECT structure_smiles FROM data
@@ -134,7 +187,7 @@ async function handleSubSearch(radio, smiles, group, max) {
                                                     organism_taxonomy_09species,
                                                     organism_taxonomy_10varietas])`;
 
-    const matchingSmiles = await sendDataPython(query, smiles).catch((error) => {
+    const matchingSmiles = await sendDataPython('public/python/substructureSearch.py',query, smiles).catch((error) => {
       console.error("Error while calling Python script:", error);
       });
 
@@ -152,7 +205,7 @@ async function handleSubSearch(radio, smiles, group, max) {
                                                     organism_taxonomy_10varietas])`, [matchingSmiles, group, max]);
   } else {
     const query = `SELECT structure_smiles FROM data`;
-    const matchingSmiles = await sendDataPython(query, smiles).catch((error) => {
+    const matchingSmiles = await sendDataPython('public/python/substructureSearch.py',query, smiles).catch((error) => {
       console.error("Error while calling Python script:", error);
     });
 
@@ -162,9 +215,26 @@ async function handleSubSearch(radio, smiles, group, max) {
 
 
 // Function to handle 'sim_search' tab
-async function handleSimSearch(radio, smiles, group, max) {
+async function handleSimSearch(radio, smiles, group, max, tanimoto) {
+
   if (group) {
-    return await db.query(`SELECT structure_smiles FROM data
+    const query = `SELECT DISTINCT structure_smiles FROM data
+                                    WHERE ${group} = ANY (array[organism_taxonomy_01domain, 
+                                                    organism_taxonomy_02kingdom, 
+                                                    organism_taxonomy_03phylum,
+                                                    organism_taxonomy_04class,
+                                                    organism_taxonomy_05order,
+                                                    organism_taxonomy_06family,
+                                                    organism_taxonomy_07tribe,
+                                                    organism_taxonomy_08genus,
+                                                    organism_taxonomy_09species,
+                                                    organism_taxonomy_10varietas])`;
+
+    const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
+      console.error("Error while calling Python script:", error);
+      });
+
+    return await db.query(`SELECT * FROM data
                                     WHERE structure_smiles = ANY($1) AND
                                     $2 = ANY (array[organism_taxonomy_01domain, 
                                                     organism_taxonomy_02kingdom, 
@@ -177,6 +247,10 @@ async function handleSimSearch(radio, smiles, group, max) {
                                                     organism_taxonomy_09species,
                                                     organism_taxonomy_10varietas])`, [matchingSmiles, group, max]);
   } else {
+    const query = `SELECT DISTINCT structure_smiles FROM data`;
+    const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
+      console.error("Error while calling Python script:", error);
+    });
 
     return await db.query(`SELECT * FROM data WHERE structure_smiles = ANY($1) LIMIT $2`, [matchingSmiles, max]);
   }
@@ -237,13 +311,15 @@ router.all('/explore/structure', async (req, res) => {
       const group = req.body.taxo;
       const activeTab = req.body.activeTab;
       const radio = req.body.radio;
+      const tanimoto = req.body.tanimoto / 100 ;
+      console.log(tanimoto);
 
       // Get the handler for the active tab
       const tabHandler = tabHandlers[activeTab];
       
       if (tabHandler) {
       
-        const results = await tabHandler(radio, smiles, group, max);
+        const results = await tabHandler(radio, smiles, group, max, tanimoto);
 
         res.render('exploreStructure', { columns, results: results.rows, hits: results.rows.length });
 
