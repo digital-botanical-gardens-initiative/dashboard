@@ -30,9 +30,15 @@
   </script>
   <script type="text/javascript" language="javascript" src="/JSME_2022-09-26/jsme/jsme.nocache.js"></script>
   <script>
-      function updateSMILES(smile) {
+    function updateSMILES(smile) {
+      if (smile){
         document.getElementById("smiles").value = smile;
+        return true;
+      } else {
+        alert('Please draw a molecule');
+        return false;  // This will prevent form submission
       }
+    }
   </script>
   <style>
     .navbar {background-color: green;}
@@ -220,9 +226,22 @@
       </select>
     </div>
     <hr>
-    <br>
+    <div id="display_option">
+      <h6>Display options</h6>
+      <label class="container">
+        <input type="radio" checked="checked" name="radio" value="table">
+        Table
+        <span class="checkmark"></span>
+      </label>
+      <label class="container">
+        <input type="radio" name="radio" value="graph">
+        Graphical
+        <span class="checkmark"></span>
+      </label>
+    </div>
+    <hr>
     <input id="smiles" type="hidden" name="smiles" value="">
-    <button class="submit" type="submit" onclick="updateSMILES(document.jme.smiles());"><i class="fa fa-search"></i> Search</button>
+    <button class="submit" type="submit" onclick="return updateSMILES(document.jme.smiles());"><i class="fa fa-search"></i> Search</button>
 
     </form>
     <br>

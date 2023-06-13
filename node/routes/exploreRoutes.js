@@ -84,8 +84,6 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
       console.error('Error in Python script:', error);
     });
     
-  }).finally(() => {
-    console.timeEnd('sendDataPython');
   });
 }
 
@@ -93,15 +91,6 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
 
 
 async function handleExactMatch(radio, smiles, group, max, tanimoto) {
-  let cacheKey = `exactMatch:${radio}:${smiles}:${group}:${max}`;
-  let cachedResult = await client.getAsync(cacheKey);
-
-  if (cachedResult) {
-    console.log("Cache hit for", cacheKey);
-    return JSON.parse(cachedResult);
-  }
-  
-  console.log("Cache miss for", cacheKey);
 
   let InChi;
   // Promisify the Python spawn process
@@ -143,9 +132,7 @@ async function handleExactMatch(radio, smiles, group, max, tanimoto) {
                       organism_taxonomy_10varietas])
       LIMIT $3
       `, [structure, group, max]);
-      if (result){
-        await client.setAsync(cacheKey, JSON.stringify(result));
-      }
+
       return result;
     } else {
       let result = await db.query(`SELECT * FROM data WHERE ${radio} = $1 LIMIT $2`, [structure, max]);
@@ -219,7 +206,7 @@ async function handleSimSearch(radio, smiles, group, max, tanimoto) {
 
   if (group) {
     const query = `SELECT DISTINCT structure_smiles FROM data
-                                    WHERE ${group} = ANY (array[organism_taxonomy_01domain, 
+                                    WHERE '${group}' = ANY (array[organism_taxonomy_01domain, 
                                                     organism_taxonomy_02kingdom, 
                                                     organism_taxonomy_03phylum,
                                                     organism_taxonomy_04class,
@@ -245,7 +232,9 @@ async function handleSimSearch(radio, smiles, group, max, tanimoto) {
                                                     organism_taxonomy_07tribe,
                                                     organism_taxonomy_08genus,
                                                     organism_taxonomy_09species,
-                                                    organism_taxonomy_10varietas])`, [matchingSmiles, group, max]);
+                                                    organism_taxonomy_10varietas])
+                                    LIMIT $3`
+                                    , [matchingSmiles, group, max]);
   } else {
     const query = `SELECT DISTINCT structure_smiles FROM data`;
     const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
@@ -312,7 +301,6 @@ router.all('/explore/structure', async (req, res) => {
       const activeTab = req.body.activeTab;
       const radio = req.body.radio;
       const tanimoto = req.body.tanimoto / 100 ;
-      console.log(tanimoto);
 
       // Get the handler for the active tab
       const tabHandler = tabHandlers[activeTab];

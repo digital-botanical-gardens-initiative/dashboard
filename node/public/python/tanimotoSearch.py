@@ -30,7 +30,6 @@ try:
         # Calculate the Tanimoto Similarity
         similarity = DataStructs.TanimotoSimilarity(db_molecules_fps[i], query_molecule_fps)
         # If the similarity is above threshold_similarity, add the smiles to matching_smiles
-        print(similarity, file=sys.stderr)
         if similarity >= threshold_similarity:
             matching_smiles.append(smiles)
 
