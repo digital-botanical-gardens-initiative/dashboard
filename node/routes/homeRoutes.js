@@ -10,8 +10,7 @@ router.get('/', async (req, res) => {
         SELECT 
             structure_taxonomy_npclassifier_01pathway as pathway,
             structure_taxonomy_npclassifier_02superclass as superclass,
-            structure_taxonomy_npclassifier_03class as class,
-            COUNT(DISTINCT structure_nameTraditional) as molecule_count
+            structure_taxonomy_npclassifier_03class as class
         FROM data
         GROUP BY pathway, superclass, class
     `);

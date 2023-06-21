@@ -4,21 +4,23 @@ const router = express.Router();
 const db = require('./db');
 const fetch = require('node-fetch');
 const { spawn } = require('child_process');
-/* const redis = require('redis');
-const { promisify } = require('util');
 
-const client = redis.createClient(); // This line may need to be configured based on your Redis setup
-
-// Convert Redis client methods to Promises, to allow us to use async/await syntax
-client.getAsync = promisify(client.get).bind(client);
-client.setAsync = promisify(client.set).bind(client); */
 
 router.use(express.urlencoded({ extended: true }));
 
-/* const { newEngine } = require('@comunica/actor-init-sparql');
-const { SparqlEndpointFetcher } = require('fetch-sparql-endpoint');
-const fetcher = new SparqlEndpointFetcher();
-const myEngine = newEngine(); */
+
+const taxonomyColumns = [
+  'organism_taxonomy_01domain',
+  'organism_taxonomy_02kingdom',
+  'organism_taxonomy_03phylum',
+  'organism_taxonomy_04class',
+  'organism_taxonomy_05order',
+  'organism_taxonomy_06family',
+  'organism_taxonomy_07tribe',
+  'organism_taxonomy_08genus',
+  'organism_taxonomy_09species',
+  'organism_taxonomy_10varietas'
+];
 
 
 const getTableColumns = async () => {
@@ -31,16 +33,7 @@ const getTableColumns = async () => {
 };
 
 async function sendDataPython(script, query, smiles, tanimoto = 1) {
-/*   console.time('sendDataPython');
-  let cacheKey = `sendDataPython:${query}:${smiles}`;
-  let cachedResult = await client.getAsync(cacheKey);
-  
-  if (cachedResult) {
-    console.log("Cache hit for", cacheKey);
-    return JSON.parse(cachedResult);
-  }
 
-  console.log("Cache miss for", cacheKey); */
 
   return new Promise(async (resolve, reject) => {
     console.time('db.query');
@@ -72,11 +65,7 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
       // Split the output into a list of SMILES strings
       matchingSmiles = matchingSmiles.split('\n');
       console.log('Python process finished');
-      
-      // Cache the result before resolving
-      /* client.setAsync(cacheKey, JSON.stringify(matchingSmiles))
-        .catch(err => console.error('Error caching data:', err));
-       */
+
       resolve(matchingSmiles);
     });
     
@@ -90,7 +79,7 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
 
 
 
-async function handleExactMatch(radio, smiles, group, max, tanimoto) {
+async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
 
   let InChi;
   // Promisify the Python spawn process
@@ -112,139 +101,138 @@ async function handleExactMatch(radio, smiles, group, max, tanimoto) {
     });
   });
 
-  InChi = await getInChi;
-  
-  if (radio === 'structure_inchi' || radio === 'structure_smiles') {
-    let structure = radio === 'structure_inchi' ? InChi : smiles;
-    if (group) {
-      let result = await db.query(`
-      SELECT * FROM data
-      WHERE ${radio} = $1 AND 
-      $2 = ANY (array[organism_taxonomy_01domain, 
-                      organism_taxonomy_02kingdom, 
-                      organism_taxonomy_03phylum,
-                      organism_taxonomy_04class,
-                      organism_taxonomy_05order,
-                      organism_taxonomy_06family,
-                      organism_taxonomy_07tribe,
-                      organism_taxonomy_08genus,
-                      organism_taxonomy_09species,
-                      organism_taxonomy_10varietas])
-      LIMIT $3
-      `, [structure, group, max]);
+  InChi = '{' + await getInChi + '}';
+  smiles_arr = '{' + smiles + '}';
 
-      return result;
-    } else {
-      let result = await db.query(`SELECT * FROM data WHERE ${radio} = $1 LIMIT $2`, [structure, max]);
-  
-      /* if (result) {
-        // If the database query is successful, cache the result
-        await client.setAsync(cacheKey, JSON.stringify(result));
-      } */
-      
-      return result;    
-    } 
+  if (radio === 'structure_inchi' || radio === 'structure_smiles') {
+    let structure = radio === 'structure_inchi' ? InChi : smiles_arr;
+
+    if (display === 'table') {
+      return await getTableData(radio, structure, group, max);
+    } else if (display === 'graph') {
+      return await getGraphData(radio, structure, group, max);
+    }
   }
-  return { rows: [] };
+
+  return { result: [] };
 }
+
 
 
 // Function to handle 'sub_search' tab
-async function handleSubSearch(radio, smiles, group, max, tanimoto) {
-/*   let cacheKey = `subSearch:${radio}:${smiles}:${group}:${max}`;
-  let cachedResult = await client.getAsync(cacheKey);
+async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
+  const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
+  const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
 
-  if (cachedResult) {
-    console.log("Cache hit for", cacheKey);
-    return JSON.parse(cachedResult);
-  }
-  
-  console.log("Cache miss for", cacheKey); */
-
-  if (group) {
-    const query = `SELECT structure_smiles FROM data
-                                    WHERE ${group} = ANY (array[organism_taxonomy_01domain, 
-                                                    organism_taxonomy_02kingdom, 
-                                                    organism_taxonomy_03phylum,
-                                                    organism_taxonomy_04class,
-                                                    organism_taxonomy_05order,
-                                                    organism_taxonomy_06family,
-                                                    organism_taxonomy_07tribe,
-                                                    organism_taxonomy_08genus,
-                                                    organism_taxonomy_09species,
-                                                    organism_taxonomy_10varietas])`;
-
-    const matchingSmiles = await sendDataPython('public/python/substructureSearch.py',query, smiles).catch((error) => {
-      console.error("Error while calling Python script:", error);
-      });
-
-    return await db.query(`SELECT structure_smiles FROM data
-                                    WHERE structure_smiles = ANY($1) AND
-                                    $2 = ANY (array[organism_taxonomy_01domain, 
-                                                    organism_taxonomy_02kingdom, 
-                                                    organism_taxonomy_03phylum,
-                                                    organism_taxonomy_04class,
-                                                    organism_taxonomy_05order,
-                                                    organism_taxonomy_06family,
-                                                    organism_taxonomy_07tribe,
-                                                    organism_taxonomy_08genus,
-                                                    organism_taxonomy_09species,
-                                                    organism_taxonomy_10varietas])`, [matchingSmiles, group, max]);
-  } else {
-    const query = `SELECT structure_smiles FROM data`;
-    const matchingSmiles = await sendDataPython('public/python/substructureSearch.py',query, smiles).catch((error) => {
-      console.error("Error while calling Python script:", error);
+  const matchingSmiles = await sendDataPython('public/python/substructureSearch.py', query, smiles).catch((error) => {
+    console.error("Error while calling Python script:", error);
     });
+  const column = 'structure_smiles';
 
-    return await db.query(`SELECT * FROM data WHERE structure_smiles = ANY($1) LIMIT $2`, [matchingSmiles, max]);
+    switch(display) {
+      case 'table':
+        return await getTableData(column, matchingSmiles, group, max);
+      case 'graph':
+        return await getGraphData(column, matchingSmiles, group, max);
+      default:
+        throw new Error(`Unknown display type: ${display}`);
+    }
   }
-}
 
 
 // Function to handle 'sim_search' tab
-async function handleSimSearch(radio, smiles, group, max, tanimoto) {
+
+async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
+  const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
+  const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
+
+  const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
+    console.error("Error while calling Python script:", error);
+});
+  const column = 'structure_smiles';
+
+switch(display) {
+  case 'table':
+    return await getTableData(column, matchingSmiles, group, max);
+  case 'graph':
+    return await getGraphData(column, matchingSmiles, group, max);
+  default:
+    throw new Error(`Unknown display type: ${display}`);
+}
+}
+
+async function getTableData(column, structure, group, max) {
+  let query = `SELECT * FROM data WHERE ${column} = ANY($1)`;
+  let params = [structure];
 
   if (group) {
-    const query = `SELECT DISTINCT structure_smiles FROM data
-                                    WHERE '${group}' = ANY (array[organism_taxonomy_01domain, 
-                                                    organism_taxonomy_02kingdom, 
-                                                    organism_taxonomy_03phylum,
-                                                    organism_taxonomy_04class,
-                                                    organism_taxonomy_05order,
-                                                    organism_taxonomy_06family,
-                                                    organism_taxonomy_07tribe,
-                                                    organism_taxonomy_08genus,
-                                                    organism_taxonomy_09species,
-                                                    organism_taxonomy_10varietas])`;
-
-    const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
-      console.error("Error while calling Python script:", error);
-      });
-
-    return await db.query(`SELECT * FROM data
-                                    WHERE structure_smiles = ANY($1) AND
-                                    $2 = ANY (array[organism_taxonomy_01domain, 
-                                                    organism_taxonomy_02kingdom, 
-                                                    organism_taxonomy_03phylum,
-                                                    organism_taxonomy_04class,
-                                                    organism_taxonomy_05order,
-                                                    organism_taxonomy_06family,
-                                                    organism_taxonomy_07tribe,
-                                                    organism_taxonomy_08genus,
-                                                    organism_taxonomy_09species,
-                                                    organism_taxonomy_10varietas])
-                                    LIMIT $3`
-                                    , [matchingSmiles, group, max]);
-  } else {
-    const query = `SELECT DISTINCT structure_smiles FROM data`;
-    const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
-      console.error("Error while calling Python script:", error);
-    });
-
-    return await db.query(`SELECT * FROM data WHERE structure_smiles = ANY($1) LIMIT $2`, [matchingSmiles, max]);
+    query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
+    params.push(group);
   }
+
+  query += ' LIMIT $' + (params.length + 1);
+  params.push(max);
+
+  const result = await db.query(query, params);
+  return { result };
 }
+
+async function getGraphData(column, structure, group, max) {
+  let query = `SELECT organism_taxonomy_01domain as domain,
+           organism_taxonomy_02kingdom as kingdom,
+           organism_taxonomy_03phylum as phylum,
+           organism_taxonomy_04class as class,
+           organism_taxonomy_06family as family,
+           organism_taxonomy_07tribe as tribe,
+           organism_taxonomy_08genus as genus
+           FROM data WHERE ${column} = ANY($1)`;
+
+  let params = [structure];
+
+  if (group) {
+    query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
+    params.push(group);
+  }
+
+  query += ' LIMIT $' + (params.length + 1);
+  params.push(max);
+
+  const graphData = await db.query(query, params);
+  const totalCount = graphData.rowCount;
+  const result = buildGraphData(graphData.rows);
+
+  return { result, totalCount };
+}
+
+
+function buildGraphData(rows) {
+  const root = { name: "Root", children: [] };
+
+  rows.forEach(row => {
+    let currentLevel = root.children;
+    [row.domain, row.kingdom, row.phylum, row.class, row.family, row.tribe, row.genus].forEach((level, i, arr) => {
+      let existingPath = currentLevel.find(d => d.name === level);
+      if (existingPath) {
+        currentLevel = existingPath.children;
+      } else {
+        const newPath = { name: level, children: [] };
+        if (i === arr.length - 1) {
+          // This is a leaf node, so give it a size.
+          newPath.size = 1;
+        }
+        currentLevel.push(newPath);
+        currentLevel = newPath.children;
+      }
+    });
+  });
+
+  return root;
+}
+
+
+
 // Add more handler functions for other tabs...
+
 
 // A mapping from tabs to their handler functions
 const tabHandlers = {
@@ -293,9 +281,11 @@ router.all('/explore/text', async (req, res) => {
 router.all('/explore/structure', async (req, res) => {
   try {
     const columns = await getTableColumns();
+    let display = 'table'
 
     if (req.method === 'POST') {
       const smiles = req.body.smiles;
+      display = req.body.display;
       const max = req.body.maxNum;
       const group = req.body.taxo;
       const activeTab = req.body.activeTab;
@@ -307,17 +297,23 @@ router.all('/explore/structure', async (req, res) => {
       
       if (tabHandler) {
       
-        const results = await tabHandler(radio, smiles, group, max, tanimoto);
+        const results = await tabHandler(radio, display, smiles, group, max, tanimoto) ;
+        console.log(results);
 
-        res.render('exploreStructure', { columns, results: results.rows, hits: results.rows.length });
-
-        
+        if (display === 'table'){
+          console.log(columns);
+          res.render('exploreStructure', { columns, results: results.result.rows, hits: results.result.rows.length , display: display});
+        } else if (display === 'graph'){
+          hits = results.totalCount;
+          console.log(hits);
+          res.render('exploreStructure', { columns, results: results.result, hits: hits  , display: display});
+        }
       } else {
         // Handle unknown tab
         res.send('Unknown tab');
       }
     } else {
-      res.render('exploreStructure', { columns, hits: 0 });
+      res.render('exploreStructure', { columns, hits: 0 , display: display});
     }
   } catch (err) {
     console.error(err);

@@ -12,6 +12,11 @@
   <script src="../app.js" defer></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/sunburst.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="https://code.highcharts.com/modules/export-data.js"></script>
+  <script src="https://code.highcharts.com/modules/accessibility.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       var dropDown = document.getElementById("search_type");
@@ -229,12 +234,12 @@
     <div id="display_option">
       <h6>Display options</h6>
       <label class="container">
-        <input type="radio" checked="checked" name="radio" value="table">
+        <input type="radio" id="display" name="display" value="table">
         Table
         <span class="checkmark"></span>
       </label>
       <label class="container">
-        <input type="radio" name="radio" value="graph">
+        <input type="radio" id="display" name="display" value="graph">
         Graphical
         <span class="checkmark"></span>
       </label>
@@ -281,8 +286,12 @@
           });
       });
     </script>
-  
-    <%- include('./partials/exploreTable.ejs') %>
 
+    <% if(display === 'table') { %>
+      <%- include('./partials/exploreTable.ejs') %>
+    <% } else if(display === 'graph') { %>
+      <%- include('./partials/exploreGraph.ejs') %>
+    <% } %>
+      
 </body>
 </html>
