@@ -3,57 +3,79 @@
     <% if (typeof results !== 'undefined' && results.length !== 0) { %>
         <script src="https://d3js.org/d3.v6.min.js"></script>
         <script>
-            var treeMol = <%- JSON.stringify(results) %>;
-            console.log(treeMol);
-        
-            var width = 960,
-                height = 700,
-                radius = Math.min(width, height) / 2;
 
-            var x = d3.scaleLinear()
-                .range([0, 2 * Math.PI]);
-
-            var y = d3.scaleSqrt()
-                .range([0, radius]);
-
-            var color = d3.scaleOrdinal(d3.schemeCategory20c);
-
-            var partition = d3.partition();
-
-            var arc = d3.arc()
-                .startAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x0))); })
-                .endAngle(function(d) { return Math.max(0, Math.min(2 * Math.PI, x(d.x1))); })
-                .innerRadius(function(d) { return Math.max(0, y(d.y0)); })
-                .outerRadius(function(d) { return Math.max(0, y(d.y1)); });
-
-            var svg = d3.select("body").append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .append("g")
-                .attr("transform", "translate(" + width / 2 + "," + (height / 2) + ")");
-
-            var root = d3.hierarchy(treeMol);
-            root.sum(function(d) { return d.size; });
-
-            svg.selectAll("path")
-                .data(partition(root).descendants())
-                .enter().append("path")
-                .attr("d", arc)
-                .style("fill", function(d) { return color((d.children ? d : d.parent).data.name); })
-                .on("click", click);
-
-            function click(d) {
-                svg.transition()
-                    .duration(750)
-                    .tween("scale", function() {
-                        var xd = d3.interpolate(x.domain(), [d.x0, d.x1]),
-                            yd = d3.interpolate(y.domain(), [d.y0, 1]),
-                            yr = d3.interpolate(y.range(), [d.y0 ? 20 : 0, radius]);
-                        return function(t) { x.domain(xd(t)); y.domain(yd(t)).range(yr(t)); };
-                    })
-                    .selectAll("path")
-                    .attrTween("d", function(d) { return function() { return arc(d); }; });
+            function autoBox() {
+              document.body.appendChild(this);
+              const {x, y, width, height} = this.getBBox();
+              document.body.removeChild(this);
+              return [x, y, width, height];
             }
+
+            var data = <%- JSON.stringify(results) %>;
+            console.log(data);
+
+
+            const radius = 500 / 2;
+
+            const partition = data => d3.partition()
+                .size([2 * Math.PI, radius])
+                (d3.hierarchy(data)
+                    .sum(d => d.size)
+                    .sort((a, b) => b.size - a.size));
+
+            const arc = d3.arc()
+                .startAngle(d => d.x0)
+                .endAngle(d => d.x1)
+                .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+                .padRadius(radius / 2)
+                .innerRadius(d => d.y0)
+                .outerRadius(d => d.y1 - 1);
+
+            const root = partition(data);
+
+            const maxDepth = d3.max(root.descendants(), d => d.depth);
+            var color = d3.scaleSequential()
+              .interpolator(d3.interpolateRainbow)
+              .domain([0, maxDepth]);
+
+            const svg = d3.create("svg")
+                .attr("width", radius * 2)
+                .attr("height", radius * 2)
+                .attr("viewBox", [-radius, -radius, radius * 2, radius * 2]);
+
+            const format = d3.format(",d");
+            console.log(data.name);
+
+            svg.append("g")
+                .attr("fill-opacity", 0.6)
+                .selectAll("path")
+                .data(root.descendants().filter(d => d.depth))
+                .join("path")
+                .attr("d", arc)
+                .attr("fill", d => color(d.depth))
+                .append("title")
+                .text(d => `${d.ancestors().map(d => d.data.name).reverse().join("/")}\n${format(d.value)}`);
+
+
+
+            svg.append("g")
+                .attr("pointer-events", "none")
+                .attr("text-anchor", "middle")
+                .attr("font-size", 10)
+                .attr("font-family", "sans-serif")
+                .selectAll("text")
+                .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 10))
+                .join("text")
+                .attr("transform", function(d) {
+                    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+                    const y = (d.y0 + d.y1) / 2;
+                    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 1 ? 0 : 90})`;
+                })
+                .attr("dy", "0.35em")
+                .text(d => d.data.name);
+            
+            document.body.appendChild(svg.node());
+            
         </script>
     <% } %>
 </div>

@@ -298,14 +298,11 @@ router.all('/explore/structure', async (req, res) => {
       if (tabHandler) {
       
         const results = await tabHandler(radio, display, smiles, group, max, tanimoto) ;
-        console.log(results);
 
         if (display === 'table'){
-          console.log(columns);
           res.render('exploreStructure', { columns, results: results.result.rows, hits: results.result.rows.length , display: display});
         } else if (display === 'graph'){
           hits = results.totalCount;
-          console.log(hits);
           res.render('exploreStructure', { columns, results: results.result, hits: hits  , display: display});
         }
       } else {
