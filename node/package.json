@@ -7,9 +7,12 @@
     "express": "^4.18.2",
     "favicon": "^0.0.2",
     "jsme-editor": "^2022.9.26",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonfile": "^6.1.0",
     "node-fetch": "^2.6.11",
     "nodemon": "^2.0.22",
     "pg": "^8.10.0",
+    "pg-dump": "^0.10.0",
     "svg": "^0.1.0"
   }
 }
