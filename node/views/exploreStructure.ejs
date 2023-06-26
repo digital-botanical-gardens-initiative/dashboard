@@ -6,6 +6,7 @@
   <title>DBGI - Browse Dataset</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -154,144 +155,145 @@
 </head>
 <body>
     <%- include('./partials/nav.ejs') %>
-
-    <%- include('./partials/exploreDropdown.ejs') %>
-
-    <hr>
-
-    <form action="/explore/structure" method="POST">
-    <div class="jsme" name="jme" code="JME.class" width=420 height=330>
-      You have to enable JavaScript in your browser to use JSME !
-    </div>
-    <br>
-    <div class="tab">
-      <button class="tablinks" onclick="openTab(event,'exact_match')">Exact match</button>
-      <button class="tablinks" onclick="openTab(event,'sub_search')">Substructure search</button>
-      <button class="tablinks" onclick="openTab(event,'sim_search')">Similarity search</button>
-    </div>
-    <input type="hidden" id="activeTab" name="activeTab" value="default_tab">
     
-    <div id="exact_match" class="tabcontent">
-      <br>
-      <h3>Exact match type: using InChI (recommended) or SMILES</h3>
-      <label class="container">
-        <input type="radio" checked="checked" name="radio" value="structure_inchi">
-        Exact match (by InChI)
-        <span class="checkmark"></span>
-      </label>
-      <label class="container">
-        <input type="radio" name="radio" value="structure_smiles">
-        Exact match (by canonical SMILES)
-        <span class="checkmark"></span>
-      </label>
-    </div>
-    
-    <div id="sub_search" class="tabcontent">
-      <br>
-      <h3>Substructure matching algorithm</h3>
-      <label class="container">
-        <input type="radio" checked="checked" name="radio">
-        Default substructure search (Ullmann algorithm)
-        <span class="checkmark"></span>
-      </label>
-      <label class="container">
-        <input type="radio" name="radio">
-        Substructure search with depth-first (DF) pattern
-        <span class="checkmark"></span>
-      </label>
-      <label class="container">
-        <input type="radio" name="radio">
-        Substructure search with Vento-Foggia algorithm
-        <span class="checkmark"></span>
-      </label>
-    </div>
-    
-    <div id="sim_search" class="tabcontent">
-      <br>
-      <h3>Select Tanimoto similarity threshold (in %)</h3>
-      <div class="slider">
-        <br>
-        <input type="range" min="0" max="100" value="50" oninput="rangeValue.innerText = this.value" name="tanimoto">
-        <p id="rangeValue">50</p>
+    <div class="content">
+      <%- include('./partials/exploreDropdown.ejs') %>
+
+      <hr>
+
+      <form action="/explore/structure" method="POST">
+      <div class="jsme" name="jme" code="JME.class" width=420 height=330>
+        You have to enable JavaScript in your browser to use JSME !
       </div>
-    </div>
-    
-    <hr>
-    (Optional) Structure search only in a taxonomic group:
-    <input type="text" id="taxo" name="taxo">
-    <hr>
-    <div>
-      Select maximal number of returned hits:
-      <select name="maxNum" id="maxNum">
-        <option value="10">10</option>
-        <option value="100">100</option>
-        <option value="250">250</option>
-        <option value="1000">1000</option>
-        <option value="10000">10000</option>
-      </select>
-    </div>
-    <hr>
-    <div id="display_option">
-      <h6>Display options</h6>
-      <label class="container">
-        <input type="radio" id="display" name="display" value="table">
-        Table
-        <span class="checkmark"></span>
-      </label>
-      <label class="container">
-        <input type="radio" id="display" name="display" value="graph">
-        Graphical
-        <span class="checkmark"></span>
-      </label>
-    </div>
-    <hr>
-    <input id="smiles" type="hidden" name="smiles" value="">
-    <button class="submit" type="submit" onclick="return updateSMILES(document.jme.smiles());"><i class="fa fa-search"></i> Search</button>
-
-    </form>
-    <br>
-
-    <script>
-      function openTab(evt, tab) {
-        evt.preventDefault();
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-          tabcontent[i].style.display = "none";
-        }
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-          tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-        document.getElementById(tab).style.display = "block";
-        evt.currentTarget.className += " active";
-
-        document.getElementById('activeTab').value = tab;
-      }
-    </script>
-
-
-    <br>
-    <div id="loader" style="display: none;">
-      Loading...
-    </div>
-    <script>
-      $(document).ready(function() {
-          $('form').submit(function() {
-              $("#loader").show();
-          });
-  
-          $(document).ajaxComplete(function() {
-              $("#loader").hide();
-          });
-      });
-    </script>
-
-    <% if(display === 'table') { %>
-      <%- include('./partials/exploreTable.ejs') %>
-    <% } else if(display === 'graph') { %>
-      <%- include('./partials/exploreGraph.ejs') %>
-    <% } %>
+      <br>
+      <div class="tab">
+        <button class="tablinks" onclick="openTab(event,'exact_match')">Exact match</button>
+        <button class="tablinks" onclick="openTab(event,'sub_search')">Substructure search</button>
+        <button class="tablinks" onclick="openTab(event,'sim_search')">Similarity search</button>
+      </div>
+      <input type="hidden" id="activeTab" name="activeTab" value="default_tab">
       
+      <div id="exact_match" class="tabcontent">
+        <br>
+        <h3>Exact match type: using InChI (recommended) or SMILES</h3>
+        <label class="container">
+          <input type="radio" checked="checked" name="radio" value="structure_inchi">
+          Exact match (by InChI)
+          <span class="checkmark"></span>
+        </label>
+        <label class="container">
+          <input type="radio" name="radio" value="structure_smiles">
+          Exact match (by canonical SMILES)
+          <span class="checkmark"></span>
+        </label>
+      </div>
+      
+      <div id="sub_search" class="tabcontent">
+        <br>
+        <h3>Substructure matching algorithm</h3>
+        <label class="container">
+          <input type="radio" checked="checked" name="radio">
+          Default substructure search (Ullmann algorithm)
+          <span class="checkmark"></span>
+        </label>
+        <label class="container">
+          <input type="radio" name="radio">
+          Substructure search with depth-first (DF) pattern
+          <span class="checkmark"></span>
+        </label>
+        <label class="container">
+          <input type="radio" name="radio">
+          Substructure search with Vento-Foggia algorithm
+          <span class="checkmark"></span>
+        </label>
+      </div>
+      
+      <div id="sim_search" class="tabcontent">
+        <br>
+        <h3>Select Tanimoto similarity threshold (in %)</h3>
+        <div class="slider">
+          <br>
+          <input type="range" min="0" max="100" value="50" oninput="rangeValue.innerText = this.value" name="tanimoto">
+          <p id="rangeValue">50</p>
+        </div>
+      </div>
+      
+      <hr>
+      (Optional) Structure search only in a taxonomic group:
+      <input type="text" id="taxo" name="taxo">
+      <hr>
+      <div>
+        Select maximal number of returned hits:
+        <select name="maxNum" id="maxNum">
+          <option value="10">10</option>
+          <option value="100">100</option>
+          <option value="250">250</option>
+          <option value="1000">1000</option>
+          <option value="10000">10000</option>
+        </select>
+      </div>
+      <hr>
+      <div id="display_option">
+        <h6>Display options</h6>
+        <label class="container">
+          <input type="radio" id="display" name="display" value="table">
+          Table
+          <span class="checkmark"></span>
+        </label>
+        <label class="container">
+          <input type="radio" id="display" name="display" value="graph">
+          Graphical
+          <span class="checkmark"></span>
+        </label>
+      </div>
+      <hr>
+      <input id="smiles" type="hidden" name="smiles" value="">
+      <button class="submit" type="submit" onclick="return updateSMILES(document.jme.smiles());"><i class="fa fa-search"></i> Search</button>
+
+      </form>
+      <br>
+
+      <script>
+        function openTab(evt, tab) {
+          evt.preventDefault();
+          var i, tabcontent, tablinks;
+          tabcontent = document.getElementsByClassName("tabcontent");
+          for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+          }
+          tablinks = document.getElementsByClassName("tablinks");
+          for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+          }
+          document.getElementById(tab).style.display = "block";
+          evt.currentTarget.className += " active";
+
+          document.getElementById('activeTab').value = tab;
+        }
+      </script>
+
+
+      <br>
+      <div id="loader" style="display: none;">
+        Loading...
+      </div>
+      <script>
+        $(document).ready(function() {
+            $('form').submit(function() {
+                $("#loader").show();
+            });
+    
+            $(document).ajaxComplete(function() {
+                $("#loader").hide();
+            });
+        });
+      </script>
+
+      <% if(display === 'table') { %>
+        <%- include('./partials/exploreTable.ejs') %>
+      <% } else if(display === 'graph') { %>
+        <%- include('./partials/exploreGraph.ejs') %>
+      <% } %>
+    </div>    
 </body>
 </html>

@@ -16,25 +16,27 @@
 <body>
     <%- include('./partials/nav.ejs') %>
 
-    <h1>Download</h1>
+    <div class="content">
 
-    <select id="format">
-      <option value="csv">CSV</option>
-      <option value="json">JSON</option>
-<!--       <option value="sql">SQL</option>  --> 
-    </select>
-    
-    <button id="download">Download</button>
+      <h1>Download</h1>
 
-    <script>
-      $(document).ready(function() {
-        $('#download').click(function() {
-          var format = $('#format').val();
-          window.location.href = '/download/' + format;
-        });
-      });
-    </script>
+      <select id="format">
+        <option value="csv">CSV</option>
+        <option value="json">JSON</option>
+    <!--       <option value="sql">SQL</option>  --> 
+      </select>
       
-    
+      <button id="download">Download</button>
+
+      <script>
+        $(document).ready(function() {
+          $('#download').click(function() {
+            var format = $('#format').val();
+            window.location.href = '/download/' + format;
+          });
+        });
+      </script>
+      
+    </div> 
 </body>
 </html>

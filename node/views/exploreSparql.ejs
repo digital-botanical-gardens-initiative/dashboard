@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DBGI - Browse Dataset</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-  <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -27,22 +27,21 @@
     }
   });
   </script>
-  <style>
-    .navbar {background-color: green;}
-  </style>
 </head>
 <body>
     <%- include('./partials/nav.ejs') %>
-    <%- include('./partials/exploreDropdown.ejs') %>
 
-    <form action="/explore/SPARQL" method="POST">
-        <textarea name="query" rows="10" cols="50" placeholder="Enter your SPARQL query"></textarea>
-        <br>
-        <button type="submit">Run Query</button>
-      </form>
-      
-      <% if (typeof results !== 'undefined') { %>
-        <pre><%- JSON.stringify(results, null, 2) %></pre>
-      <% } %>
-      
+    <div class="content">
+      <%- include('./partials/exploreDropdown.ejs') %>
+
+      <form action="/explore/SPARQL" method="POST">
+          <textarea name="query" rows="10" cols="50" placeholder="Enter your SPARQL query"></textarea>
+          <br>
+          <button type="submit">Run Query</button>
+        </form>
+        
+        <% if (typeof results !== 'undefined') { %>
+          <pre><%- JSON.stringify(results, null, 2) %></pre>
+        <% } %>
+    </div>
 </body>
