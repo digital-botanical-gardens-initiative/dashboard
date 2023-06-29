@@ -6,7 +6,15 @@ const db = require('./db');
 router.use(express.urlencoded({ extended: true }));
 
 router.get('/', async (req, res) => {
-    const resultMol = await db.query(`
+
+    const plants = await db.query(`
+        SELECT DISTINCT organism_taxonomy_08genus
+        FROM data
+        WHERE organism_taxonomy_02kingdom = 'Archaeplastida'`);
+
+
+    
+/*     const resultMol = await db.query(`
         SELECT 
             structure_taxonomy_npclassifier_01pathway as pathway,
             structure_taxonomy_npclassifier_02superclass as superclass,
@@ -64,7 +72,11 @@ router.get('/', async (req, res) => {
         });
     });
 
-    res.render('home', { treeMol, treeOrg });
+    res.render('home', { treeMol, treeOrg }); */
+
+    var result = plants.rowCount;
+
+    res.render('home', {result});
 });
 
 

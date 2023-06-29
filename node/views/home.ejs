@@ -6,6 +6,7 @@
     <title>DBGI - Home</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="../css/style.css" />
+    <link rel="shortcut icon" href="../assets/logo.png">
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -20,116 +21,151 @@
 <body>
     <%- include('./partials/nav.ejs') %>
     <div class="content">
-        <h1>Welcome!</h1>
+        <h1 class="center">Welcome!</h1>
         <div class="row">
-            <div class="column">
-                <h3>Molecular diversity in the DBGI</h3>
-                <button onclick="window.location.href='/element';">Browse Molecular Diversity</button>
-                <script src="https://d3js.org/d3.v5.min.js"></script>
-                <script>
-                    var treeMol = <%- JSON.stringify(treeMol) %>;
-                
-                    var diameter = 500;
-                    var radius = diameter / 2;
-                    var innerRadius = radius - 120;
-                
-                    var tree = d3.tree()
-                        .size([2 * Math.PI, innerRadius])
-                        .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
-                
-                    var root = d3.hierarchy(treeMol);
-                    let treeData = tree(root);
-                
-                    let nodes = treeData.descendants();
-                    let links = treeData.links();
-                
-                    var svg = d3.select("body").append("svg")
-                        .attr("width", 500)
-                        .attr("height", 500)
-                        .append("g")
-                        .attr("transform", "translate(" + radius + "," + radius + ")");
-                
-                
-                    var link = svg.selectAll(".link")
-                        .data(links)
-                        .enter().append("path")
-                        .attr("class", "link")
-                        .attr("d", d3.linkRadial()
-                            .angle(function(d) { return d.x; })
-                            .radius(function(d) { return d.y; }));
-                
-                    var node = svg.selectAll(".node")
-                        .data(nodes)
-                        .enter().append("g")
-                        .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
-                        .attr("transform", function(d) { return "rotate(" + (d.x * 180 / Math.PI - 90) + ")translate(" + d.y + ")"; });
-                
-                    node.append("circle")
-                        .attr("r", 4.5);
-                
-                    node.append("text")
-                        .attr("dy", ".31em")
-                        .attr("x", function(d) { return d.x < Math.PI === !d.children ? 6 : -6; })
-                        .style("font-size", "7px")
-                        .attr("text-anchor", function(d) { return d.x < Math.PI === !d.children ? "start" : "end"; })
-                        .attr("transform", function(d) { return d.x >= Math.PI ? "rotate(180)" : null; })
-                        .text(function(d) { return d.children ? d.data.name : ""; });  // Only render the name if the node has children
-                
-                </script>
-            </div>
-            <div class="column">
-                <h3>Organism diversity in the DBGI</h3>
-                <button onclick="window.location.href='/organism';">Browse Organism diversity</button>
-                <script>
-                    var treeOrg = <%- JSON.stringify(treeOrg) %>;
-                
-                    var diameter = 500;
-                    var radius = diameter / 2;
-                    var innerRadius = radius - 120;
-                
-                    var tree = d3.tree()
-                        .size([2 * Math.PI, innerRadius])
-                        .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
-                
-                    var root = d3.hierarchy(treeOrg);
-                
-                    tree(root);
-                
-                    var svg = d3.select("body").append("svg")
-                        .attr("width", 500)
-                        .attr("height", 500)
-                        .append("g")
-                        .attr("transform", "translate(" + radius + "," + radius + ")");
-                
-                    var link = svg.selectAll(".link")
-                        .data(root.links())
-                        .enter().append("path")
-                        .attr("class", "link")
-                        .attr("d", d3.linkRadial()
-                            .angle(function(d) { return d.x; })
-                            .radius(function(d) { return d.y; }));
-                
-                    var node = svg.selectAll(".node")
-                        .data(root.descendants())
-                        .enter().append("g")
-                        .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
-                        .attr("transform", function(d) { return "rotate(" + (d.x * 180 / Math.PI - 90) + ")translate(" + d.y + ")"; });
-                
-                    node.append("circle")
-                        .attr("r", 4.5);
-                
-                    node.append("text")
-                        .attr("dy", ".31em")
-                        .attr("x", function(d) { return d.x < Math.PI === !d.children ? 6 : -6; })
-                        .style("font-size", "7px")
-                        .attr("text-anchor", function(d) { return d.x < Math.PI === !d.children ? "start" : "end"; })
-                        .attr("transform", function(d) { return d.x >= Math.PI ? "rotate(180)" : null; })
-                        .text(function(d) { return d.children ? d.data.name : ""; });  // Only render the name if the node has children
-                
-                
-                </script>
+        <div class="column">
+            <div class="widget">
+                <h5 class="stat_title">Plant extraction diversity progress</h5>
+            <div id="chart" class="chart-container"></div>
+        </div>
+        <div class="column">
+            <div class="widget">
+                <h5 class="stat_title">Molecular diversity progress</h5>
+                <div id="chart_mol" class="chart-container"></div>
             </div>
         </div>
+        </div>
     </div>
-</body>
-</html>
+        <script>
+
+          var total = 424335; // total known organisms Source: https://ourworldindata.org/biodiversity
+          var progress = <%- JSON.stringify(result) %>; // organisms in the database
+     
+          var createGradient=function(svg,id,color1,color2){
+                      var defs = svg.append("svg:defs");
+
+                      var red_gradient = defs.append("svg:linearGradient")
+                             .attr("id", id)
+                             .attr("x1", "0%")
+                             .attr("y1", "0%")
+                             .attr("x2", "50%")
+                             .attr("y2", "100%")
+                             .attr("spreadMethod", "pad");
+
+                      red_gradient.append("svg:stop")
+                             .attr("offset", "50%")
+                             .attr("stop-color", color1)
+                             .attr("stop-opacity", 1);
+
+                      red_gradient.append("svg:stop")
+                             .attr("offset", "100%")
+                             .attr("stop-color", color2)
+                             .attr("stop-opacity", 1);
+          };  
+
+        var percent = progress/total * 100;
+
+        var ratio=percent/100;
+
+        var pie=d3.pie()
+                  .value(function(d){return d})
+                  .sort(null);
+
+        var w=300,h=300;
+
+        var outerRadius=(w/2)-10;
+        var innerRadius=110;
+
+        var color = ['#f2503f','#ea0859','#404F70'];
+
+        var svg=d3.select("#chart")
+                  .append("svg")
+                  .attr("width", w)
+                  .attr("height", h)
+                  .attr("class", 'shadow')
+                  .append('g')
+                  .attr('transform', 'translate('+w/2+','+h/2+')');
+
+
+        createGradient(svg,'gradient',color[0],color[1]);
+          
+        var arc=d3.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius)
+            .startAngle(0)
+            .endAngle(2*Math.PI);
+          
+        var arcLine=d3.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius)
+            .startAngle(0);
+          
+          
+        var pathBackground=svg.append('path')
+                              .datum({endAngle: 2 * Math.PI})
+                              .attr('d', arc)
+                              .style('fill', color[2]);
+
+        var pathChart=svg.append('path')
+                          .datum({endAngle: 0})
+                          .attr('d', arcLine)
+                          .style('fill', 'url(#gradient)');
+
+                
+        var isShowingPercentage = true; // New variable to track current state
+
+        var percentText = svg.append('text')
+                            .text('%')
+                            .attr('class', 'percent')
+                            .attr('text-anchor', 'middle')
+                            .attr('dx', 50)
+                            .attr('dy', -5)
+                            .style('fill', color[1])
+                            .style('font-size', '40px');
+
+        var middleCount = svg.append('text')
+            .datum(percent)
+            .text(function(d) {
+                return d.toFixed(0);
+            })
+            .attr('class', 'middleText')
+            .attr('text-anchor', 'middle')
+            .attr('dy', 30)
+            .attr('dx', 0)
+            .style('fill', color[1])
+            .style('font-size', '90px')
+            .on("click", function(d) {
+                isShowingPercentage = !isShowingPercentage; 
+                d3.select(this).text(isShowingPercentage ? percent.toFixed(0) : progress);
+                percentText.style('visibility', isShowingPercentage ? 'visible' : 'hidden'); // New line to hide/show '%'
+            });
+                            
+          
+
+        var arcTween=function(transition, newAngle) {
+            transition.attrTween("d", function (d) {
+                var interpolate = d3.interpolate(d.endAngle, newAngle);
+                var interpolateCount = d3.interpolate(0, percent);
+                return function (t) {
+                    d.endAngle = interpolate(t);
+                    middleCount.text(Math.floor(interpolateCount(t)));
+                    return arcLine(d);
+                };
+            });
+        };
+ 
+ 
+        var animate = function() {
+                pathChart.transition()
+                         .duration(750)
+                         .ease(d3.easeCubic) // updated this line
+                         .call(arcTween,((2*Math.PI))*ratio);
+              };
+
+
+        setTimeout(animate,0);
+
+                </script>
+            </div>
+        </body>
+        </html>

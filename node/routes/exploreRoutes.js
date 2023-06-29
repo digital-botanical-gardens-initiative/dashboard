@@ -78,7 +78,7 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
 
 
 
-
+// Structure funtions
 async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
 
   let InChi;
@@ -160,6 +160,26 @@ switch(display) {
     throw new Error(`Unknown display type: ${display}`);
 }
 }
+
+
+// Text function
+
+async function exactTextMatch(display, column, text, max){
+  var group = ''
+
+  var text = '{' + text + '}';
+
+  switch(display) {
+    case 'table':
+      return await getTableData(column, text, group, max);
+    case 'graph':
+      return await getGraphData(column, text, group, max);
+    default:
+      throw new Error(`Unknown display type: ${display}`);
+  }
+}
+
+// display function
 
 async function getTableData(column, structure, group, max) {
   let query = `SELECT * FROM data WHERE ${column} = ANY($1)`;
@@ -256,20 +276,26 @@ router.get('/explore', async (req, res) => {
 router.all('/explore/text', async (req, res) => {
   try {
     const columns = await getTableColumns();
+    let display = 'table';
 
     if (req.method === 'POST') {
       const column = req.body.column;
       const searchTerm = req.body.search;
-      let results = {}
-      if (req.body.exact === 'true') {
-        results = await db.query(`SELECT * FROM data WHERE ${column} = $1`, [searchTerm]);
-      } else {
-        results = await db.query(`SELECT * FROM data WHERE ${column} ILIKE $1`, [`%${searchTerm}%`]);
+      display = req.body.display;
+      const max = req.body.maxNum;
+
+      let results = await exactTextMatch(display, column, searchTerm, max);
+      console.log(results);
+
+      if (display === 'table'){
+        res.render('exploreText', { columns, results: results.result.rows, hits: results.result.rows.length , display: display});
+      } else if (display === 'graph'){
+        hits = results.totalCount;
+        res.render('exploreText', { columns, results: results.result, hits: hits  , display: display});
       }
-      
-      res.render('exploreText', { columns, results: results.rows , hits: results.rows.length}); 
+
     } else {
-      res.render('exploreText', { columns , hits: 0});
+      res.render('exploreText', { columns , hits: 0, display});
     }
   } catch (err) {
     console.error(err);

@@ -50,10 +50,11 @@ ul.molecules-list {
         grid-template-columns: repeat(3, auto);
 }
 .center {
-    display: block;
+    display: flex;
     margin-left: auto;
     margin-right: auto;
     width: 50%;
+    justify-content: center;
 }
 ul.element-list {
     columns: 3;
@@ -114,4 +115,17 @@ ul.organisms-list {
     columns: 3;
     -webkit-columns: 3;
     -moz-columns: 3;
+}
+
+#chart-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.stat_title {
+    justify-content: center;
+    align-items: center;
+    color: darkmagenta;
 }

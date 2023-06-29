@@ -8,6 +8,7 @@ const elementRoutes = require('./routes/elementRoutes');
 const organismRoutes = require('./routes/organismRoutes');
 const homeRoutes = require('./routes/homeRoutes');
 const downloadRoutes = require('./routes/downloadRoutes');
+const KGRoutes = require('./routes/KGRoutes');
 
 
 
@@ -24,7 +25,7 @@ app.set('view engine', 'ejs');
 //listen for requests
 app.listen(PORT, '134.21.20.118', () => console.log('Server listening on 134.21.20.118:' + PORT));
 
-app.use(express.static('public'), exploreRoutes, elementRoutes, organismRoutes, homeRoutes, downloadRoutes);
+app.use(express.static('public'), exploreRoutes, elementRoutes, organismRoutes, homeRoutes, downloadRoutes, KGRoutes);
 
 
 // Get pages
