@@ -1,22 +1,19 @@
 // downloadRoutes.js
 const express = require('express');
 const router = express.Router();
-const db = require('./db');
+const dotenv = require("dotenv");
+const { NONE } = require('graphdb/lib/transaction/transaction-isolation-level');
+dotenv.config();
 const {ServerClient, GraphDBServerClient, ServerClientConfig} = require('graphdb').server;
 const {RepositoryClientConfig, RDFRepositoryClient} = require('graphdb').repository;
 const {RDFMimeType} = require('graphdb').http;
 const {SparqlJsonResultParser} = require('graphdb').parser;
 const {GetQueryPayload, QueryType} = require('graphdb').query;
 
-const dotenv = require("dotenv");
-dotenv.config();
-require('dotenv').config();
-
 
 router.use(express.urlencoded({ extended: true }));
 
 async function queryGraphDB(query) {
-
   const endpoint = process.env.ENDPOINT_GRAPHDB;
   const readTimeout = 30000;
   const writeTimeout = 30000;
@@ -35,35 +32,56 @@ async function queryGraphDB(query) {
   const payload = new GetQueryPayload()
                         .setQuery(query)
                         .setQueryType(QueryType.SELECT)
-                        .setResponseType(RDFMimeType.SPARQL_RESULTS_XML)
+                        .setResponseType(RDFMimeType.SPARQL_RESULTS_JSON)
                         .setLimit(100);
 
-  return repository.query(payload).then((stream) => {
-    stream.on('data', (bindings) => {
-      console.log(bindings);
-    });
+  return new Promise((resolve, reject) => {
+    const nodes = [];
+    const edges = [];
+
+    repository.query(payload).then((stream) => {
+      stream.on('data', (bindings) => {
+        console.log(bindings);
+        for (const binding in bindings) {
+          console.log(binding);
+          if (bindings.hasOwnProperty(binding)) {
+            nodes.push({id: bindings[binding].value, label: bindings[binding].value});
+          }
+        }
+      });
+      
+
       stream.on('end', () => {
-      // handle end of the stream
+        // Resolve the promise with the graph data when the stream ends
+        resolve({nodes: nodes, edges: edges});
+      });
+
+      stream.on('error', (error) => {
+        // Reject the promise if there's an error
+        reject(error);
+      });
     });
   });
 }
 
-
-router.all('/KG', (req, res) => {
+// downloadRoutes.js
+router.all('/KG', async (req, res) => {
   try {
     if (req.method === 'POST') {
       const query = req.body.query;
-      queryGraphDB(query);
+      const graph = await queryGraphDB(query);
+
+      res.render('KG', {results: graph.nodes});  // pass nodes array to the view
+    } else {
+      res.render('KG', {title: 'KG'});
     }
-
-    res.render('KG', {title: 'KG'});
   } catch (error) {
-      console.error(error);
-      res.redirect('/KG');
-      res.status(500).send("Server Error");
+    console.error(error);
+    res.status(500).send("Server Error");
   }
+});
 
-}); 
+
 
 module.exports = router;
 

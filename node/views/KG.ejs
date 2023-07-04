@@ -13,6 +13,19 @@
   <script src="js/app.js" defer></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script type="text/javascript" src="https://visjs.github.io/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    /* Add some basic styling */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    </style>
 </head>
 <body>
     <%- include('./partials/nav.ejs') %>
@@ -20,19 +33,32 @@
     <h1 class="content"> Knowledge graph </h1>
 
     <form action="/KG" method="POST">
-      <textarea name="query" rows="10" cols="50" placeholder="Enter your SPARQL query"></textarea>
+      <textarea name="query" id="query" rows="10" cols="50" placeholder="Enter your SPARQL query"></textarea>
       <br>
       <button type="submit">Run Query</button>
-
-      <div id="sigma-container"></div>
-      <div id="search">
-        <input type="search" id="search-input" list="suggestions" placeholder="Try searching for a node..." />
-        <datalist id="suggestions"></datalist>
-      </div>
-      <script src="build/bundle.js"></script>
-      
     </form>
-    
+
+
+    <% if (typeof results !== 'undefined' && results.length > 0) { %>
+      <table>
+          <thead>
+              <tr>
+                  <th>ID</th>
+                  <th>Label</th>
+              </tr>
+          </thead>
+          <tbody>
+              <% results.forEach(function(node) { %>
+                  <tr>
+                      <td><%= node.id %></td>
+                      <td><%= node.label %></td>
+                  </tr>
+              <% }); %>
+          </tbody>
+      </table>
+  <% } else { %>
+      <p>No results to display</p>
+  <% } %>
 
     
 </body>
