@@ -8,16 +8,20 @@ const {RDFMimeType} = require('graphdb').http;
 const {SparqlJsonResultParser} = require('graphdb').parser;
 const {GetQueryPayload, QueryType} = require('graphdb').query;
 
+const dotenv = require("dotenv");
+dotenv.config();
+require('dotenv').config();
+
 
 router.use(express.urlencoded({ extended: true }));
 
 async function queryGraphDB(query) {
 
-  const endpoint = 'https://dbgikg.commons-lab.org';
+  const endpoint = process.env.ENDPOINT_GRAPHDB;
   const readTimeout = 30000;
   const writeTimeout = 30000;
   const config = new RepositoryClientConfig(endpoint)
-      .setEndpoints(['https://dbgikg.commons-lab.org/repositories/DBGI-KG'])
+      .setEndpoints([process.env.REPO_GRAPHDB])
       .setHeaders({
         'Accept': RDFMimeType.TURTLE
       })
