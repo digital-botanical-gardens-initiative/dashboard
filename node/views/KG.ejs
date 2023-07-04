@@ -18,6 +18,22 @@
     <%- include('./partials/nav.ejs') %>
 
     <h1 class="content"> Knowledge graph </h1>
+
+    <form action="/KG" method="POST">
+      <textarea name="query" rows="10" cols="50" placeholder="Enter your SPARQL query"></textarea>
+      <br>
+      <button type="submit">Run Query</button>
+
+      <div id="sigma-container"></div>
+      <div id="search">
+        <input type="search" id="search-input" list="suggestions" placeholder="Try searching for a node..." />
+        <datalist id="suggestions"></datalist>
+      </div>
+      <script src="build/bundle.js"></script>
+      
+    </form>
+    
+
     
 </body>
 </html>

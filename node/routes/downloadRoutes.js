@@ -10,21 +10,47 @@ const jsonfile = require('jsonfile');
 router.use(express.urlencoded({ extended: true }));
 
 router.get('/download', (req, res) => {
-    res.render('download', {title: 'Download'});
+  try {
+      res.render('download', {title: 'Download'});
+  } catch (error) {
+      console.error(error);
+      res.status(500).send("Server Error");
+  }
 });
 
 router.get('/download/csv', async (req, res) => {
-  const data = await db.query('SELECT * FROM data');
-  const csv = json2csv(data.rows);
-  fs.writeFileSync('./dbgi.csv', csv);
-  res.download('./dbgi.csv');
+  try {
+      const data = await db.query('SELECT * FROM data');
+      const csv = json2csv(data.rows);
+      fs.writeFileSync('./dbgi.csv', csv);
+      res.download('./dbgi.csv');
+  } catch (error) {
+      console.error(error);
+      if(error.code === 'ENOENT') {
+          res.status(404).send("File not found");
+      } else {
+          res.status(500);
+          res.redirect('/download');
+      }
+  }
 });
 
 router.get('/download/json', async (req, res) => {
-  const data = await db.query('SELECT * FROM data');
-  jsonfile.writeFileSync('./dbgi.json', data.rows);
-  res.download('./dbgi.json');
+  try {
+      const data = await db.query('SELECT * FROM data');
+      jsonfile.writeFileSync('./dbgi.json', data.rows);
+      res.download('./dbgi.json');
+  } catch (error) {
+      console.error(error);
+      if(error.code === 'ENOENT') {
+          res.status(404).send("File not found");
+      } else {
+          res.status(500);
+          res.redirect('/download');
+      }
+  }
 });
+
 
 /* router.get('/download/sql', async (req, res) => {
   const dump = await pgDump.dump({
