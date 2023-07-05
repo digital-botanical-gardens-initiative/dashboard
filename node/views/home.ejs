@@ -1,15 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <!-- Defines the character set for the document -->
     <meta charset="UTF-8">
+    <!-- Sets the viewport width and initial scale for mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Specifies the title of the document -->
     <title>DBGI - Home</title>
+
+    <!-- Includes Bootstrap CSS from a CDN -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <!-- Includes a custom CSS file -->
     <link rel="stylesheet" type="text/css" href="../css/style.css" />
+    <!-- Specifies a favicon for the document -->
     <link rel="shortcut icon" href="../assets/logo.png">
+
+    <!-- Includes jQuery, Popper.js, and Bootstrap JS from a CDN -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!-- Includes Plotly.js, D3.js, and Highcharts from a CDN -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://code.highcharts.com/highcharts.js"></script>
@@ -19,28 +31,50 @@
     <script src="https://code.highcharts.com/modules/accessibility.js"></script>
 </head>
 <body>
+    <!-- Includes the navigation bar using EJS partials -->
     <%- include('./partials/nav.ejs') %>
+
+    <!-- Main content wrapper -->
     <div class="content">
+        <!-- Main title of the page -->
         <h1 class="center">Welcome!</h1>
+
+        <!-- A row container for displaying charts -->
         <div class="row">
-        <div class="column">
-            <div class="widget">
-                <h5 class="stat_title">Plant extraction diversity progress</h5>
-            <div id="chart" class="chart-container"></div>
-        </div>
-        <div class="column">
-            <div class="widget">
-                <h5 class="stat_title">Molecular diversity progress</h5>
-                <div id="chart_mol" class="chart-container"></div>
+
+            <!-- Column for the plant extraction diversity progress chart -->
+            <div class="column">
+                <!-- Widget for a chart -->
+                <div class="widget">
+                    <!-- Title for the chart -->
+                    <h5 class="stat_title">Plant extraction diversity progress</h5>
+
+                    <!-- Container for the chart data -->
+                    <div id="chart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Column for the molecular diversity progress chart -->
+            <div class="column">
+                <!-- Widget for a chart -->
+                <div class="widget">
+                    <!-- Title for the chart -->
+                    <h5 class="stat_title">Molecular diversity progress</h5>
+
+                    <!-- Container for the chart data -->
+                    <div id="chart_mol" class="chart-container"></div>
+                </div>
             </div>
         </div>
-        </div>
     </div>
-        <script>
 
-          var total = 424335; // total known organisms Source: https://ourworldindata.org/biodiversity
-          var progress = <%- JSON.stringify(result) %>; // organisms in the database
-     
+    <!-- JavaScript code for handling chart data and interactions -->
+    <script>
+        // Variables for total organisms and organisms in the database
+        var total = 424335; // total known organisms Source: https://ourworldindata.org/biodiversity
+        var progress = <%- JSON.stringify(result) %>; // organisms in the database
+        
+        // Function for creating gradient effects on the chart
           var createGradient=function(svg,id,color1,color2){
                       var defs = svg.append("svg:defs");
 
@@ -62,11 +96,13 @@
                              .attr("stop-color", color2)
                              .attr("stop-opacity", 1);
           };  
-
+        
+        // Calculation for the percentage of organisms
         var percent = progress/total * 100;
 
         var ratio=percent/100;
-
+        
+        // D3 pie chart configuration
         var pie=d3.pie()
                   .value(function(d){return d})
                   .sort(null);
@@ -154,7 +190,7 @@
             });
         };
  
- 
+        // Function to animate the chart
         var animate = function() {
                 pathChart.transition()
                          .duration(750)
@@ -162,7 +198,7 @@
                          .call(arcTween,((2*Math.PI))*ratio);
               };
 
-
+        // Start the animation
         setTimeout(animate,0);
 
                 </script>

@@ -1,14 +1,24 @@
 // exploreRoutes.js
+// Importing necessary modules
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
 const fetch = require('node-fetch');
 const { spawn } = require('child_process');
+const dotenv = require("dotenv");
+dotenv.config();
 
+// Importing necessary modules from 'graphdb' package
+const {ServerClient, GraphDBServerClient, ServerClientConfig} = require('graphdb').server;
+const {RepositoryClientConfig, RDFRepositoryClient} = require('graphdb').repository;
+const {RDFMimeType} = require('graphdb').http;
+const {SparqlJsonResultParser} = require('graphdb').parser;
+const {GetQueryPayload, QueryType} = require('graphdb').query;
 
+// Middleware to parse URL-encoded bodies
 router.use(express.urlencoded({ extended: true }));
 
-
+// Defining the columns related to taxonomy
 const taxonomyColumns = [
   'organism_taxonomy_01domain',
   'organism_taxonomy_02kingdom',
@@ -22,7 +32,7 @@ const taxonomyColumns = [
   'organism_taxonomy_10varietas'
 ];
 
-
+// Function to retrieve column names from the 'data' table in the 'public' schema
 const getTableColumns = async () => {
   const tableColumns = await db.query(`
     SELECT column_name
@@ -32,19 +42,19 @@ const getTableColumns = async () => {
   return tableColumns.rows;
 };
 
+// Function to execute a Python script with some inputs and return the results
 async function sendDataPython(script, query, smiles, tanimoto = 1) {
-
-
   return new Promise(async (resolve, reject) => {
+    // Timing the db query execution
     console.time('db.query');
-    // Fetch SMILES strings from the database
-    const smilesList = await db.query(query);
+    const smilesList = await db.query(query);  // Fetch SMILES strings from the database
     console.timeEnd('db.query');
     
+    // Mapping through the response to extract only the SMILES structure
     const smilesListMapped = smilesList.rows.map(row => row.structure_smiles);
     
+    // Calling a Python script to perform a substructure search
     console.time('spawn process');
-    // Call Python script to perform substructure search
     const process = spawn('python3', [script, smiles, tanimoto]);
     process.stdin.write(smilesListMapped.join('\n'));
     process.stdin.on('finish', () => {
@@ -54,44 +64,37 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
     
     let matchingSmiles = '';
     process.stdout.on('data', (data) => {
+      // Appending the output data to 'matchingSmiles'
       matchingSmiles += data.toString();
     });
     
+    // Logging any errors in the Python script execution
     process.stderr.on('data', (data) => {
       console.error(`Python stderr: ${data}`);
     });
     
     process.stdout.on('end', () => {
-      // Split the output into a list of SMILES strings
+      // Splitting the output into a list of SMILES strings
       matchingSmiles = matchingSmiles.split('\n');
       console.log('Python process finished');
-
-      resolve(matchingSmiles);
+      resolve(matchingSmiles);  // Resolve the promise
     });
     
     process.on('error', (error) => {
       console.error('Error in Python script:', error);
     });
-    
   });
 }
 
-
-
-// Structure funtions
+// Function to handle 'exact_search' tab
 async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
-
+  // Convert SMILES to InChI using Python
   let InChi;
-  // Promisify the Python spawn process
   const getInChi = new Promise((resolve, reject) => {
-    // Call Python script to convert SMILES to InChI
     const process = spawn('python3', ['public/python/smileToInchi.py', smiles]);
-
     process.stdout.on('data', (data) => {
-      // 'data' is the InChI string returned from Python script
       InChi = data.toString();
     });
-
     process.on('close', (code) => {
       if (code !== 0) {
         reject(new Error(`Python script exited with code ${code}`));
@@ -106,18 +109,14 @@ async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
 
   if (radio === 'structure_inchi' || radio === 'structure_smiles') {
     let structure = radio === 'structure_inchi' ? InChi : smiles_arr;
-
     if (display === 'table') {
       return await getTableData(radio, structure, group, max);
     } else if (display === 'graph') {
       return await getGraphData(radio, structure, group, max);
     }
   }
-
   return { result: [] };
 }
-
-
 
 // Function to handle 'sub_search' tab
 async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
@@ -129,19 +128,17 @@ async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
     });
   const column = 'structure_smiles';
 
-    switch(display) {
-      case 'table':
-        return await getTableData(column, matchingSmiles, group, max);
-      case 'graph':
-        return await getGraphData(column, matchingSmiles, group, max);
-      default:
-        throw new Error(`Unknown display type: ${display}`);
-    }
+  switch(display) {
+    case 'table':
+      return await getTableData(column, matchingSmiles, group, max);
+    case 'graph':
+      return await getGraphData(column, matchingSmiles, group, max);
+    default:
+      throw new Error(`Unknown display type: ${display}`);
   }
-
+}
 
 // Function to handle 'sim_search' tab
-
 async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
   const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
   const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
@@ -151,24 +148,25 @@ async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
 });
   const column = 'structure_smiles';
 
-switch(display) {
-  case 'table':
-    return await getTableData(column, matchingSmiles, group, max);
-  case 'graph':
-    return await getGraphData(column, matchingSmiles, group, max);
-  default:
-    throw new Error(`Unknown display type: ${display}`);
+  switch(display) {
+    case 'table':
+      return await getTableData(column, matchingSmiles, group, max);
+    case 'graph':
+      return await getGraphData(column, matchingSmiles, group, max);
+    default:
+      throw new Error(`Unknown display type: ${display}`);
+  }
 }
-}
 
 
-// Text function
-
+// Function for finding exact text matches in the database
 async function exactTextMatch(display, column, text, max){
   var group = ''
 
+  // Format text as string array for PostgreSQL
   var text = '{' + text + '}';
 
+  // Depending on the display type, return table or graph data
   switch(display) {
     case 'table':
       return await getTableData(column, text, group, max);
@@ -179,25 +177,30 @@ async function exactTextMatch(display, column, text, max){
   }
 }
 
-// display function
-
+// Function to fetch data for table display
 async function getTableData(column, structure, group, max) {
+  // SQL query to select data where column value is in the provided structure
   let query = `SELECT * FROM data WHERE ${column} = ANY($1)`;
   let params = [structure];
 
+  // If group is provided, append to SQL query
   if (group) {
     query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
     params.push(group);
   }
 
+  // Limit the query results
   query += ' LIMIT $' + (params.length + 1);
   params.push(max);
 
+  // Execute the query
   const result = await db.query(query, params);
   return { result };
 }
 
+// Function to fetch data for graph display
 async function getGraphData(column, structure, group, max) {
+  // SQL query to select taxonomical data where column value is in the provided structure
   let query = `SELECT organism_taxonomy_01domain as domain,
            organism_taxonomy_02kingdom as kingdom,
            organism_taxonomy_03phylum as phylum,
@@ -209,35 +212,46 @@ async function getGraphData(column, structure, group, max) {
 
   let params = [structure];
 
+  // If group is provided, append to SQL query
   if (group) {
     query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
     params.push(group);
   }
 
+  // Limit the query results
   query += ' LIMIT $' + (params.length + 1);
   params.push(max);
 
+  // Execute the query
   const graphData = await db.query(query, params);
   const totalCount = graphData.rowCount;
+
+  // Build graph data from the results
   const result = buildGraphData(graphData.rows);
 
   return { result, totalCount };
 }
 
-
+// Function to convert rows of taxonomy data into hierarchical structure for graph visualization
 function buildGraphData(rows) {
+  // Initialize root of the graph
   const root = { name: "Root", children: [] };
 
+  // For each row of data
   rows.forEach(row => {
     let currentLevel = root.children;
+    // For each level of taxonomy, add a node to the graph
     [row.domain, row.kingdom, row.phylum, row.class, row.family, row.tribe, row.genus].forEach((level, i, arr) => {
+      // Look for an existing node at the current level
       let existingPath = currentLevel.find(d => d.name === level);
       if (existingPath) {
+        // If found, descend to its children
         currentLevel = existingPath.children;
       } else {
+        // If not found, create a new node and descend to it
         const newPath = { name: level, children: [] };
         if (i === arr.length - 1) {
-          // This is a leaf node, so give it a size.
+          // If this is the last level of taxonomy, add a size property for leaf nodes
           newPath.size = 1;
         }
         currentLevel.push(newPath);
@@ -249,12 +263,69 @@ function buildGraphData(rows) {
   return root;
 }
 
+// Function to query a GraphDB and return the data
+async function queryGraphDB(query) {
+  // Define the endpoint, readTimeout and writeTimeout for GraphDB
+  const endpoint = process.env.ENDPOINT_GRAPHDB;
+  const readTimeout = 30000;
+  const writeTimeout = 30000;
+  
+  // Set up the configuration for the RDFRepositoryClient
+  const config = new RepositoryClientConfig(endpoint)
+      .setEndpoints([process.env.REPO_GRAPHDB])
+      .setHeaders({
+        'Accept': RDFMimeType.TURTLE
+      })
+      .setReadTimeout(readTimeout)
+      .setWriteTimeout(writeTimeout);
+      
+  // Create a new RDFRepositoryClient with the config
+  const repository = new RDFRepositoryClient(config);
 
+  // Register a new SparqlJsonResultParser
+  repository.registerParser(new SparqlJsonResultParser());
 
-// Add more handler functions for other tabs...
+  // Define the payload for the query
+  const payload = new GetQueryPayload()
+                        .setQuery(query)
+                        .setQueryType(QueryType.SELECT)
+                        .setResponseType(RDFMimeType.SPARQL_RESULTS_JSON)
+                        .setLimit(100);
 
+  // Return a promise that resolves with the data from the GraphDB
+  return new Promise((resolve, reject) => {
+    const nodes = [];
+    let headers = [];
 
-// A mapping from tabs to their handler functions
+    // Query the repository with the payload
+    repository.query(payload).then((stream) => {
+      stream.on('data', (bindings) => {
+        const node = {};
+        // For each binding in the data, add it to the node
+        for (const binding in bindings) {
+          if (bindings.hasOwnProperty(binding)) {
+            node[binding] = bindings[binding].value;  // use binding as id and bindings[binding].value as label
+            if (!headers.includes(binding)) {
+              headers.push(binding);  // add the binding to the headers if it's not already there
+            }
+          }
+        }
+        nodes.push(node);
+      });
+      stream.on('end', () => {
+        // Resolve the promise with the graph data and the headers when the stream ends
+        resolve({nodes: nodes, headers: headers});
+      });
+
+      stream.on('error', (error) => {
+        // Reject the promise if there's an error
+        reject(error);
+      });
+    });
+  });
+}
+
+// Handlers mapping object for each tab in the application UI
 const tabHandlers = {
   'exact_match': handleExactMatch,
   'sub_search': handleSubSearch,
@@ -262,7 +333,7 @@ const tabHandlers = {
   // Add more mappings for other tabs...
 };
 
-
+// Router for '/explore' endpoint, renders the explore page with table columns 
 router.get('/explore', async (req, res) => {
   try {
     const columns = await getTableColumns();
@@ -273,20 +344,24 @@ router.get('/explore', async (req, res) => {
   }
 });
 
+// Router for '/explore/text' endpoint, handles both GET and POST requests
 router.all('/explore/text', async (req, res) => {
   try {
     const columns = await getTableColumns();
     let display = 'table';
 
+    // If it's a POST request, process the search inputs
     if (req.method === 'POST') {
       const column = req.body.column;
       const searchTerm = req.body.search;
       display = req.body.display;
       const max = req.body.maxNum;
 
+      // Execute the text search and log results
       let results = await exactTextMatch(display, column, searchTerm, max);
       console.log(results);
 
+      // Render the results in the appropriate format
       if (display === 'table'){
         res.render('exploreText', { columns, results: results.result.rows, hits: results.result.rows.length , display: display});
       } else if (display === 'graph'){
@@ -295,21 +370,27 @@ router.all('/explore/text', async (req, res) => {
       }
 
     } else {
+      // If it's not a POST request, render the page with default settings
       res.render('exploreText', { columns , hits: 0, display});
     }
   } catch (err) {
+    // If there's an error, log it and send an error message
     console.error(err);
     res.send('Error while fetching columns names');
   }
 });
 
 
+// Define a router for the '/explore/structure' path which handles all types of HTTP requests
 router.all('/explore/structure', async (req, res) => {
   try {
+    // Get the table columns
     const columns = await getTableColumns();
     let display = 'table'
 
+    // Check if the HTTP request is a POST request
     if (req.method === 'POST') {
+      // Extract information from the request body
       const smiles = req.body.smiles;
       display = req.body.display;
       const max = req.body.maxNum;
@@ -318,13 +399,14 @@ router.all('/explore/structure', async (req, res) => {
       const radio = req.body.radio;
       const tanimoto = req.body.tanimoto / 100 ;
 
-      // Get the handler for the active tab
+      // Get the appropriate handler function for the active tab
       const tabHandler = tabHandlers[activeTab];
       
       if (tabHandler) {
-      
+        // If the handler function exists, call it and get the results
         const results = await tabHandler(radio, display, smiles, group, max, tanimoto) ;
 
+        // Based on the 'display' value, render the response
         if (display === 'table'){
           res.render('exploreStructure', { columns, results: results.result.rows, hits: results.result.rows.length , display: display});
         } else if (display === 'graph'){
@@ -332,43 +414,43 @@ router.all('/explore/structure', async (req, res) => {
           res.render('exploreStructure', { columns, results: results.result, hits: hits  , display: display});
         }
       } else {
-        // Handle unknown tab
+        // If the handler function does not exist, send an error message
         res.send('Unknown tab');
       }
     } else {
+      // If the request is not a POST request, render the default 'exploreStructure' page
       res.render('exploreStructure', { columns, hits: 0 , display: display});
     }
   } catch (err) {
+    // If there's any error, log it and send an error message
     console.error(err);
     res.send('Oops... something went wrong!');
   }
 });
 
-
-router.all('/explore/SPARQL', async (req,res) => {
+// Define a router for the '/explore/SPARQL' path which handles all types of HTTP requests
+router.all('/explore/SPARQL', async (req, res) => {
   try {
-    res.render('exploreSparql');
-  } catch (err) {
-    console.error(err);
-    res.send('Oops... something went wrong!');
+    // Check if the HTTP request is a POST request
+    if (req.method === 'POST') {
+      // Extract the SPARQL query from the request body
+      const query = req.body.query;
+      
+      // Query the GraphDB using the SPARQL query and get the results
+      const graph = await queryGraphDB(query);
+
+      // Render the 'exploreSparql' page with the query results
+      res.render('exploreSparql', {results: graph.nodes, headers: graph.headers}); 
+    } else {
+      // If the request is not a POST request, render the default 'exploreSparql' page
+      res.render('exploreSparql', {title: 'KG'});
+    }
+  } catch (error) {
+    // If there's any error, log it and send a server error message
+    console.error(error);
+    res.status(500).send("Server Error");
   }
-})
+});
 
-/* router.post('/sparql', async (req, res) => {
-  const query = req.body.query;
-  
-  try {
-    const result = await myEngine.query(query, {
-      sources: [{ type: 'sparql', value: endpointUrl }],
-    });
-
-    const bindings = await result.bindings();
-    const results = bindings.map(binding => binding.toObject());
-    res.render('sparql', { results });
-  } catch (err) {
-    console.error(err);
-    res.send('Error while executing SPARQL query');
-  }
-}); */
-
+// Export the router module
 module.exports = router;

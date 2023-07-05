@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Document metadata -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Botanical Garden Initiative</title>
+  <!-- External CSS stylesheets -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/style.css" />
   <link rel="shortcut icon" href="../assets/logo.png">
+  <!-- JSME molecular editor -->
   <script type="text/javascript" language="javascript" src="../JSME_2022-09-26/jsme/jsme.nocache.js"></script>
+  <!-- External JavaScript libraries -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -15,6 +19,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
   <script>
+    // Event listener for dropdown selection
     document.addEventListener('DOMContentLoaded', function () {
       var dropDown = document.getElementById("search_type");
       dropDown.onchange = function () {
@@ -23,15 +28,19 @@
           window.location.href = "/explore/text";
         } else if (selectedValue === "by_structure") {
           window.location.href = "/explore/structure";
+        } else if (selectedValue === "SPARQL") {
+          window.location.href = "/explore/SPARQL";
         }
       }
     });
   </script>
 </head>
 <body>
+    <!-- Include navigation component -->
     <%- include('./partials/nav.ejs') %>
     
   <div class="content">
+    <!-- Include explore dropdown component -->
     <%- include('./partials/exploreDropdown.ejs') %>
   </div>
 

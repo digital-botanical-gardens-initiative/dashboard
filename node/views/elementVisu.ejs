@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Document metadata -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DBGI - <%=id%></title>
+    <!-- External CSS stylesheets -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="../css/style.css" />
+    <!-- Favicon -->
     <link rel="shortcut icon" href="../assets/logo.png">
+    <!-- External JavaScript libraries -->
     <script src="js/app.js" defer></script>
     <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -15,15 +19,18 @@
     <script type="text/javascript" language="javascript" src="/JSME_2022-09-26/jsme/jsme.nocache.js"></script>
 </head>
 <body>
+  <!-- Include navigation component -->
   <%- include('./partials/nav.ejs') %>
 
   <div class="container">
+    <!-- Heading for compound information -->
     <h2><%= id %> (<a href="<%= wikidata %>"><%= wikidata_id %></a>)</h2>
     <br>
     <h4>Chemical structures</h4>
     <h6>molecular formula: <%= formula %></h6>
     <div class="row">
         <div class="col-md-6">
+          <!-- JME applet for 3D structure -->
           <div code="JME.class" archive="JME.jar" width=240 height=180>
             <param name="options" value="depict,useopenchemlib">
             <param name="smiles" value="<%= smile%>">
@@ -31,6 +38,7 @@
           <figcaption style="text-align: center;">3D</figcaption>
         </div>
         <div class="col-md-6">
+          <!-- JME applet for 2D structure -->
           <div code="JME.class" archive="JME.jar" width=240 height=180>
             <param name="options" value="depict,useopenchemlib">
             <param name="smiles" value="<%= smile_2d%>">
@@ -65,6 +73,7 @@
       <ul class="organisms-list">
         <% organisms.forEach((organism, index) => { %>
           <li class="organism-item">
+            <!-- Link to organism details -->
             <a href="/organism/<%= encodeURIComponent(organism)%>">
               <%- organism %>
             </a>

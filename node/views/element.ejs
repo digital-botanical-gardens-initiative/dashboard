@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Document metadata -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DBGI element</title>
+  <!-- External CSS stylesheets -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <!-- Favicon -->
   <link rel="shortcut icon" href="../assets/logo.png">
+  <!-- External JavaScript libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
   <script src="js/app.js" defer></script>
@@ -15,10 +19,13 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
+  <!-- Include navigation component -->
   <%- include('./partials/nav.ejs') %>
   <div class="content">
+    <!-- Heading for chemical compounds list -->
     <h1>Chemical compounds list</h1>
     <div>
+      <!-- Search form -->
       <form action="/element" method="POST">
         <input type="text" name="searchTerm" placeholder="Search..." required />
         <button type="submit">submit</button>
@@ -26,6 +33,7 @@
       <hr>
       <div>
       <% if (typeof rows !== 'undefined' && rows.length !== 0) { %>
+      <!-- Display search results -->
       <ul>
         <% rows.forEach(row => { %>
           <li>
@@ -34,11 +42,13 @@
           </li>
       </ul>
       <% } else { %>
+        <!-- Display message when there are no search results -->
         <h4> No results </h4>
       <% } %>
       </div>
       <hr>
       <div>
+        <!-- Display most found compounds -->
         <h4> Most Found: </h4>
         <ul class="molecules-list">
           <% examples.forEach(row => { %>

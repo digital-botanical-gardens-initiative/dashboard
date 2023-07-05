@@ -17,14 +17,17 @@
     <%- include('./partials/nav.ejs') %>
   
     <div class="container">
+        <!-- Page Title -->
         <h2><%= id %> (<a href="<%= wikidata %>"><%= wikidata_id %></a>)</h2>
         <br>
         <% if (imageUrl) { %>
+            <!-- Display Image -->
             <img src="<%= imageUrl %>" title="<%= wikidata_id %>" class="center">
         <% } %>
         <hr>
         <h4>Taxonomy</h4>
             <table>
+                <!-- Taxonomy Table -->
                 <tr>
                     <th>Domain</th>
                     <td><%=domain%></td>
@@ -65,12 +68,13 @@
                     <th>Varietas</th>
                     <td><%=varietas%></td>
                 </tr>
-              </table> 
+            </table> 
         <hr>
         <h4>Chemical Compounds:</h4>
         <div class="molecules-grid">
             <ul class="molecules-list">
               <% molecules.forEach((molecule, index) => { %>
+                <!-- Displaying Chemical Compounds -->
                 <li class="molecule-item">
                   <a href="/element/<%= encodeURIComponent(molecule)%>">
                     <%- molecule %>

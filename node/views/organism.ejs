@@ -19,39 +19,45 @@
 
   <div class="content">
 
+    <!-- Organisms List -->
     <h1>Organisms list</h1>
     <div>
+      <!-- Search Form -->
       <form action="/organism" method="POST">
         <input type="text" name="searchTerm" placeholder="Search..." required />
         <button type="submit">submit</button>
       </form>
       <hr>
+
       <div>
       <% if (typeof rows !== 'undefined' && rows.length !== 0) { %>
-      <ul>
-        <% rows.forEach(row => { %>
-          <li>
-            <a href="/organism/<%= encodeURIComponent(row.organism) %>"><%= row.organism %></a>
-        <% }) %>
-          </li>
-      </ul>
+        <!-- Displaying Search Results -->
+        <ul>
+          <% rows.forEach(row => { %>
+            <li>
+              <a href="/organism/<%= encodeURIComponent(row.organism) %>"><%= row.organism %></a>
+            </li>
+          <% }) %>
+        </ul>
       <% } else { %>
         <h4> No results </h4>
       <% } %>
       </div>
+
       <hr>
+
       <div>
         <h4> Most Found: </h4>
+        <!-- Displaying Examples -->
         <ul class="organisms-list">
           <% examples.forEach(row => { %>
             <li>
               <a href="/organism/<%= encodeURIComponent(row.organism)%>"><%= row.organism%></a>
-              <% }) %>
             </li>
+          <% }) %>
         </ul>
       </div>
     </div>
   </div>
 </body>
-
 </html>

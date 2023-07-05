@@ -14,6 +14,7 @@
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
   <script>
+    // Handle the change event for the search_type dropdown
     document.addEventListener('DOMContentLoaded', function () {
       var dropDown = document.getElementById("search_type");
       dropDown.onchange = function () {
@@ -23,10 +24,10 @@
         } else if (selectedValue === "by_structure") {
           window.location.href = "/explore/structure";
         } else if (selectedValue === "SPARQL") {
-          window.location.href = "/explore/SPARQL"
+          window.location.href = "/explore/SPARQL";
+        }
       }
-    }
-  });
+    });
   </script>
 </head>
 <body>
@@ -36,6 +37,7 @@
 
     <%- include('./partials/exploreDropdown.ejs') %>
 
+    <!-- Search by Text -->
     <div id="by_text" > 
       <hr>
       <form action="/explore/text" method="POST">
@@ -78,11 +80,13 @@
         Loading...
       </div>
       <script>
+        // Show loader when the form is submitted
         $(document).ready(function() {
             $('form').submit(function() {
                 $("#loader").show();
             });
     
+            // Hide loader when AJAX request is complete
             $(document).ajaxComplete(function() {
                 $("#loader").hide();
             });

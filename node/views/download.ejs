@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Document metadata -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Botanical Garden Initiative</title>
+  <!-- External CSS stylesheets -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/style.css" />
+  <!-- Favicon -->
   <link rel="shortcut icon" href="../assets/logo.png">
+  <!-- External JavaScript libraries -->
   <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
@@ -15,6 +19,7 @@
   <script src="https://d3js.org/d3.v6.min.js"></script>
 </head>
 <body>
+    <!-- Include navigation component -->
     <%- include('./partials/nav.ejs') %>
 
     <div class="content">
@@ -22,18 +27,22 @@
       <h1>Download</h1>
 
       <h4 style="color: red; font-weight: bold;"> CRASH APP FOR NOW </h4>
+      <!-- Select format dropdown -->
       <select id="format">
         <option value="csv">CSV</option>
         <option value="json">JSON</option>
     <!--       <option value="sql">SQL</option>  --> 
       </select>
       
+      <!-- Download button -->
       <button id="download">Download</button>
 
       <script>
+        // Event listener for download button
         $(document).ready(function() {
           $('#download').click(function() {
             var format = $('#format').val();
+            // Redirect to the appropriate download route based on selected format
             window.location.href = '/download/' + format;
           });
         });

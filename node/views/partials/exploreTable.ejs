@@ -1,23 +1,32 @@
 <div>
-  Your search returned <%= hits%> hits.
-<% if (typeof results !== 'undefined' && results.length !== 0) { %>
+  <!-- Display the number of search hits -->
+  Your search returned <%= hits %> hits.
+  <% if (typeof results !== 'undefined' && results.length !== 0) { %>
+    <!-- Start of table section -->
     <table class="table table-bordered table-striped table-responsive">
       <thead>
         <tr>
+          <!-- Generate table headers dynamically -->
           <% columns.forEach(column => { %>
             <th><%= column.column_name %></th>
           <% }) %>
         </tr>
       </thead>
       <tbody>
+        <!-- Iterate through each search result -->
         <% results.forEach(result => { %>
           <tr>
+            <!-- Iterate through each column and display corresponding values -->
             <% columns.forEach(column => { %>
+              <!-- Conditional rendering based on column name -->
               <% if (column.column_name === 'structure_wikidata' || column.column_name === 'organism_wikidata' || column.column_name === 'reference_wikidata') { %>
+                <!-- Display value as a hyperlink to an external URL -->
                 <td><a href="<%= result[column.column_name] %>" target="_blank"><%= result[column.column_name].split("/").pop() %></a></td>
               <% } else if (column.column_name === 'structure_nametraditional') { %>
+                <!-- Display value as a hyperlink to an internal URL -->
                 <td><a href="/element/<%= result[column.column_name] %>"><%= result[column.column_name] %></a></td>
               <% } else { %>
+                <!-- Display value as plain text -->
                 <td><%= result[column.column_name] %></td>
               <% } %>
             <% }) %>
@@ -25,5 +34,6 @@
         <% }) %>
       </tbody>
     </table>
+    <!-- End of table section -->
   <% } %>
 </div>
