@@ -39,37 +39,31 @@
         <!-- Main title of the page -->
         <h1 class="center">Welcome!</h1>
 
-        <!-- A row container for displaying charts -->
-        <div class="row">
+        <img src="assets/DBGI.png" width="100%" height="100%"/>
 
-            <!-- Column for the plant extraction diversity progress chart -->
+        <!-- A row container for displaying charts -->
+<!--         <div class="row">
+
             <div class="column">
-                <!-- Widget for a chart -->
                 <div class="widget">
-                    <!-- Title for the chart -->
                     <h5 class="stat_title">Plant extraction diversity progress</h5>
 
-                    <!-- Container for the chart data -->
                     <div id="chart" class="chart-container"></div>
                 </div>
             </div>
 
-            <!-- Column for the molecular diversity progress chart -->
             <div class="column">
-                <!-- Widget for a chart -->
                 <div class="widget">
-                    <!-- Title for the chart -->
                     <h5 class="stat_title">Molecular diversity progress</h5>
 
-                    <!-- Container for the chart data -->
                     <div id="chart_mol" class="chart-container"></div>
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- JavaScript code for handling chart data and interactions -->
-    <script>
+<!--     <script>
         // Variables for total organisms and organisms in the database
         var total = 424335; // total known organisms Source: https://ourworldindata.org/biodiversity
         var progress = <%- JSON.stringify(result) %>; // organisms in the database
@@ -202,6 +196,139 @@
         setTimeout(animate,0);
 
                 </script>
+        <script>
+            // Variables for total organisms and organisms in the database
+            var total = 424335; // total known organisms Source: https://ourworldindata.org/biodiversity
+            var progress = <%- JSON.stringify(result) %>; // organisms in the database
+            
+            // Function for creating gradient effects on the chart
+              var createGradient=function(svg,id,color1,color2){
+                          var defs = svg.append("svg:defs");
+    
+                          var red_gradient = defs.append("svg:linearGradient")
+                                 .attr("id", id)
+                                 .attr("x1", "0%")
+                                 .attr("y1", "0%")
+                                 .attr("x2", "50%")
+                                 .attr("y2", "100%")
+                                 .attr("spreadMethod", "pad");
+    
+                          red_gradient.append("svg:stop")
+                                 .attr("offset", "50%")
+                                 .attr("stop-color", color1)
+                                 .attr("stop-opacity", 1);
+    
+                          red_gradient.append("svg:stop")
+                                 .attr("offset", "100%")
+                                 .attr("stop-color", color2)
+                                 .attr("stop-opacity", 1);
+              };  
+            
+            // Calculation for the percentage of organisms
+            var percent = progress/total * 100;
+    
+            var ratio=percent/100;
+            
+            // D3 pie chart configuration
+            var pie=d3.pie()
+                      .value(function(d){return d})
+                      .sort(null);
+    
+            var w=300,h=300;
+    
+            var outerRadius=(w/2)-10;
+            var innerRadius=110;
+    
+            var color = ['#f2503f','#ea0859','#404F70'];
+    
+            var svg=d3.select("#chart")
+                      .append("svg")
+                      .attr("width", w)
+                      .attr("height", h)
+                      .attr("class", 'shadow')
+                      .append('g')
+                      .attr('transform', 'translate('+w/2+','+h/2+')');
+    
+    
+            createGradient(svg,'gradient',color[0],color[1]);
+              
+            var arc=d3.arc()
+                .innerRadius(innerRadius)
+                .outerRadius(outerRadius)
+                .startAngle(0)
+                .endAngle(2*Math.PI);
+              
+            var arcLine=d3.arc()
+                .innerRadius(innerRadius)
+                .outerRadius(outerRadius)
+                .startAngle(0);
+              
+              
+            var pathBackground=svg.append('path')
+                                  .datum({endAngle: 2 * Math.PI})
+                                  .attr('d', arc)
+                                  .style('fill', color[2]);
+    
+            var pathChart=svg.append('path')
+                              .datum({endAngle: 0})
+                              .attr('d', arcLine)
+                              .style('fill', 'url(#gradient)');
+    
+                    
+            var isShowingPercentage = true; // New variable to track current state
+    
+            var percentText = svg.append('text')
+                                .text('%')
+                                .attr('class', 'percent')
+                                .attr('text-anchor', 'middle')
+                                .attr('dx', 50)
+                                .attr('dy', -5)
+                                .style('fill', color[1])
+                                .style('font-size', '40px');
+    
+            var middleCount = svg.append('text')
+                .datum(percent)
+                .text(function(d) {
+                    return d.toFixed(0);
+                })
+                .attr('class', 'middleText')
+                .attr('text-anchor', 'middle')
+                .attr('dy', 30)
+                .attr('dx', 0)
+                .style('fill', color[1])
+                .style('font-size', '90px')
+                .on("click", function(d) {
+                    isShowingPercentage = !isShowingPercentage; 
+                    d3.select(this).text(isShowingPercentage ? percent.toFixed(0) : progress);
+                    percentText.style('visibility', isShowingPercentage ? 'visible' : 'hidden'); // New line to hide/show '%'
+                });
+                                
+              
+    
+            var arcTween=function(transition, newAngle) {
+                transition.attrTween("d", function (d) {
+                    var interpolate = d3.interpolate(d.endAngle, newAngle);
+                    var interpolateCount = d3.interpolate(0, percent);
+                    return function (t) {
+                        d.endAngle = interpolate(t);
+                        middleCount.text(Math.floor(interpolateCount(t)));
+                        return arcLine(d);
+                    };
+                });
+            };
+     
+            // Function to animate the chart
+            var animate = function() {
+                    pathChart.transition()
+                             .duration(750)
+                             .ease(d3.easeCubic) // updated this line
+                             .call(arcTween,((2*Math.PI))*ratio);
+                  };
+    
+            // Start the animation
+            setTimeout(animate,0);
+    
+                    </script> -->
             </div>
         </body>
         </html>

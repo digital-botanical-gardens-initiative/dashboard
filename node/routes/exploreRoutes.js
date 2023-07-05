@@ -327,9 +327,9 @@ async function queryGraphDB(query) {
 
 // Handlers mapping object for each tab in the application UI
 const tabHandlers = {
-  'exact_match': handleExactMatch,
-  'sub_search': handleSubSearch,
-  'sim_search': handleSimSearch
+  'exact_match': [handleExactMatch],
+  'sub_search': [handleSubSearch],
+  'sim_search': [handleSimSearch]
   // Add more mappings for other tabs...
 };
 
@@ -356,6 +356,7 @@ router.all('/explore/text', async (req, res) => {
       const searchTerm = req.body.search;
       display = req.body.display;
       const max = req.body.maxNum;
+      const datasource = req.body.datasource;
 
       // Execute the text search and log results
       let results = await exactTextMatch(display, column, searchTerm, max);
@@ -398,9 +399,10 @@ router.all('/explore/structure', async (req, res) => {
       const activeTab = req.body.activeTab;
       const radio = req.body.radio;
       const tanimoto = req.body.tanimoto / 100 ;
+      const datasource = req.body.datasource;
 
       // Get the appropriate handler function for the active tab
-      const tabHandler = tabHandlers[activeTab];
+      const tabHandler = tabHandlers[activeTab][0];
       
       if (tabHandler) {
         // If the handler function exists, call it and get the results
