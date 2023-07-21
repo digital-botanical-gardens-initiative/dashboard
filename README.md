@@ -18,6 +18,8 @@ conda env create -f environment.yml
 python dashboard.py
 ```
 
+This code isn't being updated anymore.
+
 ## Node.js
 This dashboard uses *Node.js*.
 
