@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -105,16 +105,6 @@
             Default substructure search (Ullmann algorithm)
             <span class="checkmark"></span>
           </label>
-          <label class="container">
-            <input type="radio" name="radio">
-            Substructure search with depth-first (DF) pattern
-            <span class="checkmark"></span>
-          </label>
-          <label class="container">
-            <input type="radio" name="radio">
-            Substructure search with Vento-Foggia algorithm
-            <span class="checkmark"></span>
-          </label>
         </div>
         
         <!-- Similarity Search tab content -->
@@ -129,7 +119,7 @@
         </div>
         
         <hr>
-        <select name="data_source" id="data_source">
+        <select name="data_source" id="data_source" required>
           <option disabled selected value> -- Data Source -- </option>
           <option value="lotus">LOTUS</option>
           <option value="dbgi">DBGI</option>
@@ -155,7 +145,7 @@
         <div id="display_option">
           <h6>Display options</h6>
           <label class="container">
-            <input type="radio" id="display" name="display" value="table">
+            <input type="radio" id="display" name="display" value="table" required>
             Table
             <span class="checkmark"></span>
           </label>
@@ -212,11 +202,16 @@
         });
       </script>
 
-      <% if(display === 'table') { %>
-        <%- include('./partials/exploreTable.ejs') %>
-      <% } else if(display === 'graph') { %>
-        <%- include('./partials/exploreGraph.ejs') %>
-      <% } %>
+          <% if(display === 'table') { %>
+            <% if(source === 'dbgi') { %>
+              <%- include('./partials/SPARQLTable.ejs') %>
+            <% } else if(source === 'lotus') { %>
+              <%- include('./partials/exploreTable.ejs') %>
+            <% } %>
+          <% } else if(display === 'graph') { %>
+            <%- include('./partials/exploreGraph.ejs') %>
+          <% } %>
+
     </div>    
 </body>
 </html>

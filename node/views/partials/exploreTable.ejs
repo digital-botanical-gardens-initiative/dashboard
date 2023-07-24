@@ -25,6 +25,17 @@
               <% } else if (column.column_name === 'structure_nametraditional') { %>
                 <!-- Display value as a hyperlink to an internal URL -->
                 <td><a href="/element/<%= result[column.column_name] %>"><%= result[column.column_name] %></a></td>
+              <% } else if(column.column_name === 'structure_smiles' || column.column_name === 'structure_smiles_2D') { %>
+                      <!-- Wrapper for the JME applet -->
+                      <td style="width: 240px; height: 180px;">
+                        <div style="display: block; width: 100%; height: 100%;">
+                            <!-- JME applet for 3D structure -->
+                            <div code="JME.class" archive="JME.jar" width="100%" height="100%">
+                                <param name="options" value="depict,useopenchemlib">
+                                <param name="smiles" value="<%= result[column.column_name]%>">
+                            </div>
+                        </div>
+                    </td>
               <% } else { %>
                 <!-- Display value as plain text -->
                 <td><%= result[column.column_name] %></td>

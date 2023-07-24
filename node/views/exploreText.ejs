@@ -13,6 +13,7 @@
   <script src="../app.js" defer></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script type="text/javascript" language="javascript" src="/JSME_2022-09-26/jsme/jsme.nocache.js"></script>
   <script>
     // Handle the change event for the search_type dropdown
     document.addEventListener('DOMContentLoaded', function () {
@@ -46,9 +47,9 @@
             <option value="<%= column.column_name %>"><%= column.column_name %></option>
           <% }) %>
         </select>
-        <input type="text" name="search" placeholder="Search">
+        <input type="text" name="search" placeholder="Search" required>
         <hr>
-        <select name="data_source" id="data_source" >
+        <select name="data_source" id="data_source" required>
           <option disabled selected value> -- Data Source -- </option>
           <option value="lotus">LOTUS</option>
           <option value="dbgi">DBGI</option>
@@ -68,7 +69,7 @@
         <div id="display_option">
           <h6>Display options</h6>
           <label class="container">
-            <input type="radio" id="display" name="display" value="table">
+            <input type="radio" id="display" name="display" value="table" required>
             Table
             <span class="checkmark"></span>
           </label>

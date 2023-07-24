@@ -6,6 +6,7 @@ const db = require('./db');
 const fetch = require('node-fetch');
 const { spawn } = require('child_process');
 const dotenv = require("dotenv");
+const { rawListeners } = require('process');
 dotenv.config();
 
 // Importing necessary modules from 'graphdb' package
@@ -177,6 +178,131 @@ async function exactTextMatch(display, column, text, max){
   }
 }
 
+async function handleSPARQLExactMatch(radio, display, smiles, group, max, tanimoto){
+    // Convert SMILES to InChI using Python
+    let InChi;
+    const getInChi = new Promise((resolve, reject) => {
+      const process = spawn('python3', ['public/python/smileToInchiKey.py', smiles]);
+      process.stdout.on('data', (data) => {
+        InChi = data.toString();
+      });
+      process.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Python script exited with code ${code}`));
+        } else {
+          resolve(InChi);
+        }
+      });
+    });
+    
+
+    InChi = await getInChi;
+  
+    if (radio === 'structure_inchi' || radio === 'structure_smiles') {
+      let structure = radio === 'structure_inchi' ? InChi : smiles;
+       let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
+                    select ?InchiKey ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id `;
+
+        if(radio === 'structure_inchi'){
+          query += `where {
+            <https://enpkg.commons-lab.org/kg/${structure}> enpkg:has_smiles ?smiles ;
+                                                              enpkg:has_wd_id ?wd_id ;
+                                                              enpkg:has_npc_pathway ?NPCpathway ;
+                                                              enpkg:has_npc_superclass ?NPCsuperclass ;
+                                                              enpkg:has_npc_class ?NPCclass .
+            BIND(<https://enpkg.commons-lab.org/kg/${structure}> AS ?InchiKey) }
+            LIMIT ${max}`;
+        } else if(radio === 'structure_smiles'){
+          query += `where {
+                  ?InchiKey enpkg:has_smiles "${structure}" ;
+                                                              enpkg:has_wd_id ?wd_id ;
+                                                              enpkg:has_npc_pathway ?NPCpathway ;
+                                                              enpkg:has_npc_superclass ?NPCsuperclass ;
+                                                              enpkg:has_npc_class ?NPCclass .
+            BIND("${structure}" AS ?smiles) }
+            LIMIT ${max}`;
+        }
+      // Query the GraphDB using the SPARQL query and get the results
+      const graph = await queryGraphDB(query);
+
+      // Render the 'exploreSparql' page with the query results
+      return {results: graph.nodes, headers: graph.headers};  
+ 
+    }
+    return { result: [] };
+}
+
+async function handleSPARQLSubSearch(radio, display, smiles, group, max, tanimoto){
+    console.log(smiles);
+    let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+                PREFIX wd: <http://www.wikidata.org/entity/>
+                PREFIX idsm: <https://idsm.elixir-czech.cz/sparql/endpoint/>
+                PREFIX sachem: <http://bioinfo.uochb.cas.cz/rdf/v1.0/sachem#>
+                SELECT DISTINCT ?ik ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id
+                WHERE
+                { ?ik enpkg:has_smiles ?smiles ;
+                  enpkg:has_npc_pathway ?NPCpathway ;
+                  enpkg:has_npc_superclass ?NPCsuperclass ;
+                  enpkg:has_npc_class ?NPCclass ;
+                  enpkg:has_wd_id ?wd_id .
+                  SERVICE idsm:wikidata {
+                    VALUES ?SUBSTRUCTURE {
+                        "${smiles}" # Structure given by the user
+                    }
+                    ?wd_id sachem:substructureSearch _:b16.
+                    _:b16 sachem:query ?SUBSTRUCTURE.
+                  }      
+                }
+                LIMIT ${max}`;
+
+        // Query the GraphDB using the SPARQL query and get the results
+        const graph = await queryGraphDB(query);
+        console.log(graph);
+
+        // Render the 'exploreSparql' page with the query results
+        return {results: graph.nodes, headers: graph.headers};  
+}
+
+async function handleSPARQLSimSearch(radio, display, smiles, group, max, tanimoto){
+      let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      PREFIX idsm: <https://idsm.elixir-czech.cz/sparql/endpoint/>
+      PREFIX sachem: <http://bioinfo.uochb.cas.cz/rdf/v1.0/sachem#>
+      SELECT DISTINCT ?ik ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id
+      WHERE
+      { 
+          ?extract rdf:type enpkg:LabExtract .
+              ?extract enpkg:has_LCMS ?lcms .
+                  ?lcms enpkg:has_lcms_feature_list ?feature_list .
+                  ?feature_list enpkg:has_lcms_feature ?feature .
+                      ?feature enpkg:has_sirius_annotation|enpkg:has_isdb_annotation ?annotation . 
+                      ?annotation enpkg:has_InChIkey2D ?ik2d .
+                          ?ik2d enpkg:has_smiles ?smiles .
+                          ?ik2d enpkg:is_InChIkey2D_of ?ik .
+                            ?ik enpkg:has_smiles ?smiles ;
+                                enpkg:has_npc_pathway ?NPCpathway ;
+                                enpkg:has_npc_superclass ?NPCsuperclass ;
+                                enpkg:has_npc_class ?NPCclass ;
+                                enpkg:has_wd_id ?wd_id .
+                              SERVICE idsm:wikidata {
+                                ?smiles sachem:similarCompoundSearch [
+                                  sachem:query "${smiles}";
+                                  sachem:cutoff "${tanimoto}"^^xsd:double ].
+                              }      
+      }
+      LIMIT ${max}`;
+      console.log(query);
+      // Query the GraphDB using the SPARQL query and get the results
+      const graph = await queryGraphDB(query);
+
+      // Render the 'exploreSparql' page with the query results
+      return {results: graph.nodes, headers: graph.headers};  
+}
+
 // Function to fetch data for table display
 async function getTableData(column, structure, group, max) {
   // SQL query to select data where column value is in the provided structure
@@ -198,6 +324,7 @@ async function getTableData(column, structure, group, max) {
   return { result };
 }
 
+
 // Function to fetch data for graph display
 async function getGraphData(column, structure, group, max) {
   // SQL query to select taxonomical data where column value is in the provided structure
@@ -207,7 +334,9 @@ async function getGraphData(column, structure, group, max) {
            organism_taxonomy_04class as class,
            organism_taxonomy_06family as family,
            organism_taxonomy_07tribe as tribe,
-           organism_taxonomy_08genus as genus
+           organism_taxonomy_08genus as genus,
+           organism_taxonomy_09species as species,
+           organism_taxonomy_10varietas as varietas
            FROM data WHERE ${column} = ANY($1)`;
 
   let params = [structure];
@@ -235,25 +364,22 @@ async function getGraphData(column, structure, group, max) {
 // Function to convert rows of taxonomy data into hierarchical structure for graph visualization
 function buildGraphData(rows) {
   // Initialize root of the graph
-  const root = { name: "Root", children: [] };
+  const root = { name: "Root", children: [], size: 0 };
 
   // For each row of data
   rows.forEach(row => {
     let currentLevel = root.children;
     // For each level of taxonomy, add a node to the graph
-    [row.domain, row.kingdom, row.phylum, row.class, row.family, row.tribe, row.genus].forEach((level, i, arr) => {
+    [row.domain, row.kingdom, row.phylum, row.class, row.family, row.tribe, row.genus, row.species, row.varietas].forEach((level, i, arr) => {
       // Look for an existing node at the current level
       let existingPath = currentLevel.find(d => d.name === level);
       if (existingPath) {
-        // If found, descend to its children
+        // If found, descend to its children and increment size
+        existingPath.size++;
         currentLevel = existingPath.children;
       } else {
         // If not found, create a new node and descend to it
-        const newPath = { name: level, children: [] };
-        if (i === arr.length - 1) {
-          // If this is the last level of taxonomy, add a size property for leaf nodes
-          newPath.size = 1;
-        }
+        const newPath = { name: level, children: [], size: 1 };
         currentLevel.push(newPath);
         currentLevel = newPath.children;
       }
@@ -263,12 +389,13 @@ function buildGraphData(rows) {
   return root;
 }
 
+
 // Function to query a GraphDB and return the data
 async function queryGraphDB(query) {
   // Define the endpoint, readTimeout and writeTimeout for GraphDB
   const endpoint = process.env.ENDPOINT_GRAPHDB;
-  const readTimeout = 30000;
-  const writeTimeout = 30000;
+  const readTimeout = 300000;
+  const writeTimeout = 300000;
   
   // Set up the configuration for the RDFRepositoryClient
   const config = new RepositoryClientConfig(endpoint)
@@ -327,9 +454,9 @@ async function queryGraphDB(query) {
 
 // Handlers mapping object for each tab in the application UI
 const tabHandlers = {
-  'exact_match': [handleExactMatch],
-  'sub_search': [handleSubSearch],
-  'sim_search': [handleSimSearch]
+  'exact_match': [handleExactMatch, handleSPARQLExactMatch],
+  'sub_search': [handleSubSearch, handleSPARQLSubSearch],
+  'sim_search': [handleSimSearch, handleSPARQLSimSearch]
   // Add more mappings for other tabs...
 };
 
@@ -360,7 +487,6 @@ router.all('/explore/text', async (req, res) => {
 
       // Execute the text search and log results
       let results = await exactTextMatch(display, column, searchTerm, max);
-      console.log(results);
 
       // Render the results in the appropriate format
       if (display === 'table'){
@@ -387,7 +513,8 @@ router.all('/explore/structure', async (req, res) => {
   try {
     // Get the table columns
     const columns = await getTableColumns();
-    let display = 'table'
+    let display = 'table';
+    let datasource = 'lotus';
 
     // Check if the HTTP request is a POST request
     if (req.method === 'POST') {
@@ -399,10 +526,18 @@ router.all('/explore/structure', async (req, res) => {
       const activeTab = req.body.activeTab;
       const radio = req.body.radio;
       const tanimoto = req.body.tanimoto / 100 ;
-      const datasource = req.body.datasource;
+      datasource = req.body.data_source;
 
-      // Get the appropriate handler function for the active tab
-      const tabHandler = tabHandlers[activeTab][0];
+      let tabHandler
+
+      if (datasource === 'lotus'){ 
+        // Get the appropriate handler function for the active tab
+        tabHandler = tabHandlers[activeTab][0];
+      } else if (datasource === 'dbgi'){
+        tabHandler = tabHandlers[activeTab][1];
+      } else {
+        res.send('Unknown source of Data');
+      }
       
       if (tabHandler) {
         // If the handler function exists, call it and get the results
@@ -410,7 +545,11 @@ router.all('/explore/structure', async (req, res) => {
 
         // Based on the 'display' value, render the response
         if (display === 'table'){
-          res.render('exploreStructure', { columns, results: results.result.rows, hits: results.result.rows.length , display: display});
+          if (datasource === 'lotus'){
+            res.render('exploreStructure', { columns, results: results.result.rows, hits: results.result.rows.length , display: display, source: datasource});
+          } else if (datasource === 'dbgi') {
+            res.render('exploreStructure', {results: results.results, headers: results.headers, hits: 0 , display:display, source: datasource}); 
+          }
         } else if (display === 'graph'){
           hits = results.totalCount;
           res.render('exploreStructure', { columns, results: results.result, hits: hits  , display: display});
@@ -421,7 +560,7 @@ router.all('/explore/structure', async (req, res) => {
       }
     } else {
       // If the request is not a POST request, render the default 'exploreStructure' page
-      res.render('exploreStructure', { columns, hits: 0 , display: display});
+      res.render('exploreStructure', { columns, hits: 0 , display: display, source: datasource});
     }
   } catch (err) {
     // If there's any error, log it and send an error message
@@ -445,7 +584,7 @@ router.all('/explore/SPARQL', async (req, res) => {
       res.render('exploreSparql', {results: graph.nodes, headers: graph.headers}); 
     } else {
       // If the request is not a POST request, render the default 'exploreSparql' page
-      res.render('exploreSparql', {title: 'KG'});
+      res.render('exploreSparql');
     }
   } catch (error) {
     // If there's any error, log it and send a server error message
