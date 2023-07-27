@@ -35,154 +35,77 @@ const taxonomyColumns = [
 
 // Function to retrieve column names from the 'data' table in the 'public' schema
 const getTableColumns = async () => {
-  const tableColumns = await db.query(`
-    SELECT column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = 'data'
-  `);
-  return tableColumns.rows;
+  try {
+    const tableColumns = await db.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'data'
+    `);
+    return tableColumns.rows;
+  } catch (error) {
+    console.error('An error occurred while retrieving table columns:', error);
+    throw error;  // rethrowing the error allows it to be handled further up the call stack if necessary
+  }
 };
 
 // Function to execute a Python script with some inputs and return the results
 async function sendDataPython(script, query, smiles, tanimoto = 1) {
-  return new Promise(async (resolve, reject) => {
-    // Timing the db query execution
-    console.time('db.query');
-    const smilesList = await db.query(query);  // Fetch SMILES strings from the database
-    console.timeEnd('db.query');
-    
-    // Mapping through the response to extract only the SMILES structure
-    const smilesListMapped = smilesList.rows.map(row => row.structure_smiles);
-    
-    // Calling a Python script to perform a substructure search
-    console.time('spawn process');
-    const process = spawn('python3', [script, smiles, tanimoto]);
-    process.stdin.write(smilesListMapped.join('\n'));
-    process.stdin.on('finish', () => {
-      console.log('Finished writing to stdin');
+  try {
+    return new Promise(async (resolve, reject) => {
+      // Timing the db query execution
+      console.time('db.query');
+      const smilesList = await db.query(query);  // Fetch SMILES strings from the database
+      console.timeEnd('db.query');
+
+      // Mapping through the response to extract only the SMILES structure
+      const smilesListMapped = smilesList.rows.map(row => row.structure_smiles);
+
+      // Calling a Python script to perform a substructure search
+      console.time('spawn process');
+      const process = spawn('python3', [script, smiles, tanimoto]);
+      process.stdin.write(smilesListMapped.join('\n'));
+      process.stdin.on('finish', () => {
+        console.log('Finished writing to stdin');
+      });
+      process.stdin.end();
+
+      let matchingSmiles = '';
+      process.stdout.on('data', (data) => {
+        // Appending the output data to 'matchingSmiles'
+        matchingSmiles += data.toString();
+      });
+
+      // Logging any errors in the Python script execution
+      process.stderr.on('data', (data) => {
+        console.error(`Python stderr: ${data}`);
+      });
+
+      process.stdout.on('end', () => {
+        // Splitting the output into a list of SMILES strings
+        matchingSmiles = matchingSmiles.split('\n');
+        console.log('Python process finished');
+        resolve(matchingSmiles);  // Resolve the promise
+      });
+
+      process.on('error', (error) => {
+        console.error('Error in Python script:', error);
+        reject(error); // Reject the promise in case of an error in the python script
+      });
     });
-    process.stdin.end();
-    
-    let matchingSmiles = '';
-    process.stdout.on('data', (data) => {
-      // Appending the output data to 'matchingSmiles'
-      matchingSmiles += data.toString();
-    });
-    
-    // Logging any errors in the Python script execution
-    process.stderr.on('data', (data) => {
-      console.error(`Python stderr: ${data}`);
-    });
-    
-    process.stdout.on('end', () => {
-      // Splitting the output into a list of SMILES strings
-      matchingSmiles = matchingSmiles.split('\n');
-      console.log('Python process finished');
-      resolve(matchingSmiles);  // Resolve the promise
-    });
-    
-    process.on('error', (error) => {
-      console.error('Error in Python script:', error);
-    });
-  });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    throw error;  // rethrowing the error allows it to be handled further up the call stack if necessary
+  }
 }
+
 
 // Function to handle 'exact_search' tab
 async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
-  // Convert SMILES to InChI using Python
-  let InChi;
-  const getInChi = new Promise((resolve, reject) => {
-    const process = spawn('python3', ['public/python/smileToInchi.py', smiles]);
-    process.stdout.on('data', (data) => {
-      InChi = data.toString();
-    });
-    process.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Python script exited with code ${code}`));
-      } else {
-        resolve(InChi);
-      }
-    });
-  });
-
-  InChi = '{' + await getInChi + '}';
-  smiles_arr = '{' + smiles + '}';
-
-  if (radio === 'structure_inchi' || radio === 'structure_smiles') {
-    let structure = radio === 'structure_inchi' ? InChi : smiles_arr;
-    if (display === 'table') {
-      return await getTableData(radio, structure, group, max);
-    } else if (display === 'graph') {
-      return await getGraphData(radio, structure, group, max);
-    }
-  }
-  return { result: [] };
-}
-
-// Function to handle 'sub_search' tab
-async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
-  const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
-  const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
-
-  const matchingSmiles = await sendDataPython('public/python/substructureSearch.py', query, smiles).catch((error) => {
-    console.error("Error while calling Python script:", error);
-    });
-  const column = 'structure_smiles';
-
-  switch(display) {
-    case 'table':
-      return await getTableData(column, matchingSmiles, group, max);
-    case 'graph':
-      return await getGraphData(column, matchingSmiles, group, max);
-    default:
-      throw new Error(`Unknown display type: ${display}`);
-  }
-}
-
-// Function to handle 'sim_search' tab
-async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
-  const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
-  const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
-
-  const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
-    console.error("Error while calling Python script:", error);
-});
-  const column = 'structure_smiles';
-
-  switch(display) {
-    case 'table':
-      return await getTableData(column, matchingSmiles, group, max);
-    case 'graph':
-      return await getGraphData(column, matchingSmiles, group, max);
-    default:
-      throw new Error(`Unknown display type: ${display}`);
-  }
-}
-
-
-// Function for finding exact text matches in the database
-async function exactTextMatch(display, column, text, max){
-  var group = ''
-
-  // Format text as string array for PostgreSQL
-  var text = '{' + text + '}';
-
-  // Depending on the display type, return table or graph data
-  switch(display) {
-    case 'table':
-      return await getTableData(column, text, group, max);
-    case 'graph':
-      return await getGraphData(column, text, group, max);
-    default:
-      throw new Error(`Unknown display type: ${display}`);
-  }
-}
-
-async function handleSPARQLExactMatch(radio, display, smiles, group, max, tanimoto){
+  try {
     // Convert SMILES to InChI using Python
     let InChi;
     const getInChi = new Promise((resolve, reject) => {
-      const process = spawn('python3', ['public/python/smileToInchiKey.py', smiles]);
+      const process = spawn('python3', ['public/python/smileToInchi.py', smiles]);
       process.stdout.on('data', (data) => {
         InChi = data.toString();
       });
@@ -194,46 +117,198 @@ async function handleSPARQLExactMatch(radio, display, smiles, group, max, tanimo
         }
       });
     });
-    
+
+    InChi = '{' + await getInChi + '}';
+    smiles_arr = '{' + smiles + '}';
+
+    if (radio === 'structure_inchi' || radio === 'structure_smiles') {
+      let structure = radio === 'structure_inchi' ? InChi : smiles_arr;
+      if (display === 'table') {
+        return await getTableData(radio, structure, group, max);
+      } else if (display === 'graph') {
+        return await getGraphData(radio, structure, group, max);
+      }
+    }
+    return { result: [] };
+  } catch (error) {
+    console.error('An error occurred while handling the exact match:', error);
+    throw error;  // rethrowing the error allows it to be handled further up the call stack if necessary
+  }
+}
+
+// Function to handle 'sub_search' tab
+async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
+  try {
+    const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
+    const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
+
+    const matchingSmiles = await sendDataPython('public/python/substructureSearch.py', query, smiles).catch((error) => {
+      console.error("Error while calling Python script:", error);
+      // Here you may choose to either rethrow the error or handle it in some other way.
+      // For instance, we can return an empty object to signify that no results were found due to an error.
+      return {};
+    });
+    const column = 'structure_smiles';
+
+    switch(display) {
+      case 'table':
+        return await getTableData(column, matchingSmiles, group, max);
+      case 'graph':
+        return await getGraphData(column, matchingSmiles, group, max);
+      default:
+        throw new Error(`Unknown display type: ${display}`);
+    }
+  } catch (error) {
+    console.error('An error occurred while handling the sub search:', error);
+    throw error;  // rethrowing the error allows it to be handled further up the call stack if necessary
+  }
+}
+
+
+// Function to handle 'sim_search' tab
+async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
+  try {
+    const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
+    const query = `SELECT DISTINCT structure_smiles FROM data ${queryGroup}`;
+
+    const matchingSmiles = await sendDataPython('public/python/tanimotoSearch.py',query, smiles, tanimoto).catch((error) => {
+      console.error("Error while calling Python script:", error);
+      return {};
+    });
+    const column = 'structure_smiles';
+
+    switch(display) {
+      case 'table':
+        return await getTableData(column, matchingSmiles, group, max);
+      case 'graph':
+        return await getGraphData(column, matchingSmiles, group, max);
+      default:
+        throw new Error(`Unknown display type: ${display}`);
+    }
+  } catch (error) {
+    console.error('An error occurred while handling the sim search:', error);
+    throw error;  // rethrowing the error allows it to be handled further up the call stack if necessary
+  }
+}
+
+
+// Function for finding exact text matches in the database
+async function exactTextMatch(display, column, text, max){
+  try {
+    var group = ''
+
+    // Format text as string array for PostgreSQL
+    var text = '{' + text + '}';
+
+    // Depending on the display type, return table or graph data
+    switch(display) {
+      case 'table':
+        return await getTableData(column, text, group, max);
+      case 'graph':
+        return await getGraphData(column, text, group, max);
+      default:
+        throw new Error(`Unknown display type: ${display}`);
+    }
+  } catch (error) {
+    console.error('An error occurred while executing the exact text match:', error);
+    throw error;  // rethrowing the error allows it to be handled further up the call stack if necessary
+  }
+}
+
+
+/* async function handleExactTextMatchSPARQL(display, column, text, max){
+  switch(display){
+    case 'table':
+      let query = `
+      
+      
+      `
+      return results;
+    case 'graph':
+      return results;
+    default:
+      throw new Error(`Unknown display type: ${display}`);
+  }
+} */
+
+// function to handle Exact match pn DBGI data with SPARQL query
+async function handleSPARQLExactMatch(radio, display, smiles, group, max, tanimoto) {
+  try {
+    // Convert SMILES to InChI using Python
+    let InChi;
+    const getInChi = new Promise((resolve, reject) => {
+      const process = spawn('python3', ['public/python/smileToInchiKey.py', smiles]);
+      
+      process.stdout.on('data', (data) => {
+        InChi = data.toString();
+      });
+
+      process.stderr.on('data', (data) => {
+        console.error(`Python stderr: ${data}`);
+      });
+
+      process.on('error', (error) => {
+        console.error('Error in Python script:', error);
+        reject(error);
+      });
+
+      process.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Python script exited with code ${code}`));
+        } else {
+          resolve(InChi);
+        }
+      });
+    });
 
     InChi = await getInChi;
   
     if (radio === 'structure_inchi' || radio === 'structure_smiles') {
       let structure = radio === 'structure_inchi' ? InChi : smiles;
-       let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
-                    select ?InchiKey ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id `;
+      let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
+                   select ?InchiKey ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id `;
 
-        if(radio === 'structure_inchi'){
-          query += `where {
-            <https://enpkg.commons-lab.org/kg/${structure}> enpkg:has_smiles ?smiles ;
-                                                              enpkg:has_wd_id ?wd_id ;
-                                                              enpkg:has_npc_pathway ?NPCpathway ;
-                                                              enpkg:has_npc_superclass ?NPCsuperclass ;
-                                                              enpkg:has_npc_class ?NPCclass .
-            BIND(<https://enpkg.commons-lab.org/kg/${structure}> AS ?InchiKey) }
-            LIMIT ${max}`;
-        } else if(radio === 'structure_smiles'){
-          query += `where {
-                  ?InchiKey enpkg:has_smiles "${structure}" ;
-                                                              enpkg:has_wd_id ?wd_id ;
-                                                              enpkg:has_npc_pathway ?NPCpathway ;
-                                                              enpkg:has_npc_superclass ?NPCsuperclass ;
-                                                              enpkg:has_npc_class ?NPCclass .
-            BIND("${structure}" AS ?smiles) }
-            LIMIT ${max}`;
-        }
+      if(radio === 'structure_inchi'){
+        query += `where {
+          <https://enpkg.commons-lab.org/kg/${structure}> enpkg:has_smiles ?smiles ;
+                                                            enpkg:has_wd_id ?wd_id ;
+                                                            enpkg:has_npc_pathway ?NPCpathway ;
+                                                            enpkg:has_npc_superclass ?NPCsuperclass ;
+                                                            enpkg:has_npc_class ?NPCclass .
+          BIND(<https://enpkg.commons-lab.org/kg/${structure}> AS ?InchiKey) }
+          LIMIT ${max}`;
+      } else if(radio === 'structure_smiles'){
+        query += `where {
+                ?InchiKey enpkg:has_smiles "${structure}" ;
+                                                            enpkg:has_wd_id ?wd_id ;
+                                                            enpkg:has_npc_pathway ?NPCpathway ;
+                                                            enpkg:has_npc_superclass ?NPCsuperclass ;
+                                                            enpkg:has_npc_class ?NPCclass .
+          BIND("${structure}" AS ?smiles) }
+          LIMIT ${max}`;
+      }
+
       // Query the GraphDB using the SPARQL query and get the results
-      const graph = await queryGraphDB(query);
+      const graph = await queryGraphDB(query).catch((error) => {
+        console.error("Error while querying GraphDB:", error);
+        throw error;
+      });
 
       // Render the 'exploreSparql' page with the query results
       return {results: graph.nodes, headers: graph.headers};  
- 
     }
-    return { result: [] };
+  } catch (error) {
+    console.error('An error occurred in handleSPARQLExactMatch:', error);
+    throw error;  // Re-throw the error if you want to handle it further up the call stack
+  }
+  return { result: [] };
 }
 
-async function handleSPARQLSubSearch(radio, display, smiles, group, max, tanimoto){
+
+async function handleSPARQLSubSearch(radio, display, smiles, group, max, tanimoto) {
+  try {
     console.log(smiles);
+
     let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
                 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
                 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -257,200 +332,241 @@ async function handleSPARQLSubSearch(radio, display, smiles, group, max, tanimot
                 }
                 LIMIT ${max}`;
 
-        // Query the GraphDB using the SPARQL query and get the results
-        const graph = await queryGraphDB(query);
-        console.log(graph);
+    // Query the GraphDB using the SPARQL query and get the results
+    const graph = await queryGraphDB(query).catch((error) => {
+      console.error("Error while querying GraphDB:", error);
+      throw error;  // Throw the error to be caught in the outer try-catch block
+    });
 
-        // Render the 'exploreSparql' page with the query results
-        return {results: graph.nodes, headers: graph.headers};  
+    console.log(graph);
+
+    // Render the 'exploreSparql' page with the query results
+    return {results: graph.nodes, headers: graph.headers};  
+  } catch (error) {
+    console.error('An error occurred in handleSPARQLSubSearch:', error);
+    throw error;  // Re-throw the error if you want to handle it further up the call stack
+  }
 }
 
-async function handleSPARQLSimSearch(radio, display, smiles, group, max, tanimoto){
-      let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
-      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-      PREFIX wd: <http://www.wikidata.org/entity/>
-      PREFIX idsm: <https://idsm.elixir-czech.cz/sparql/endpoint/>
-      PREFIX sachem: <http://bioinfo.uochb.cas.cz/rdf/v1.0/sachem#>
-      SELECT DISTINCT ?ik ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id
-      WHERE
-      { 
-          ?extract rdf:type enpkg:LabExtract .
-              ?extract enpkg:has_LCMS ?lcms .
-                  ?lcms enpkg:has_lcms_feature_list ?feature_list .
-                  ?feature_list enpkg:has_lcms_feature ?feature .
-                      ?feature enpkg:has_sirius_annotation|enpkg:has_isdb_annotation ?annotation . 
-                      ?annotation enpkg:has_InChIkey2D ?ik2d .
-                          ?ik2d enpkg:has_smiles ?smiles .
-                          ?ik2d enpkg:is_InChIkey2D_of ?ik .
-                            ?ik enpkg:has_smiles ?smiles ;
-                                enpkg:has_npc_pathway ?NPCpathway ;
-                                enpkg:has_npc_superclass ?NPCsuperclass ;
-                                enpkg:has_npc_class ?NPCclass ;
-                                enpkg:has_wd_id ?wd_id .
-                              SERVICE idsm:wikidata {
-                                ?smiles sachem:similarCompoundSearch [
-                                  sachem:query "${smiles}";
-                                  sachem:cutoff "${tanimoto}"^^xsd:double ].
-                              }      
-      }
-      LIMIT ${max}`;
-      console.log(query);
-      // Query the GraphDB using the SPARQL query and get the results
-      const graph = await queryGraphDB(query);
 
-      // Render the 'exploreSparql' page with the query results
-      return {results: graph.nodes, headers: graph.headers};  
+async function handleSPARQLSimSearch(radio, display, smiles, group, max, tanimoto) {
+  try {
+    let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
+                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+                PREFIX wd: <http://www.wikidata.org/entity/>
+                PREFIX idsm: <https://idsm.elixir-czech.cz/sparql/endpoint/>
+                PREFIX sachem: <http://bioinfo.uochb.cas.cz/rdf/v1.0/sachem#>
+                SELECT DISTINCT ?ik ?smiles ?NPCpathway ?NPCsuperclass ?NPCclass ?wd_id
+                WHERE
+                { 
+                    ?extract rdf:type enpkg:LabExtract .
+                        ?extract enpkg:has_LCMS ?lcms .
+                            ?lcms enpkg:has_lcms_feature_list ?feature_list .
+                            ?feature_list enpkg:has_lcms_feature ?feature .
+                                ?feature enpkg:has_sirius_annotation|enpkg:has_isdb_annotation ?annotation . 
+                                ?annotation enpkg:has_InChIkey2D ?ik2d .
+                                    ?ik2d enpkg:has_smiles ?smiles .
+                                    ?ik2d enpkg:is_InChIkey2D_of ?ik .
+                                      ?ik enpkg:has_smiles ?smiles ;
+                                          enpkg:has_npc_pathway ?NPCpathway ;
+                                          enpkg:has_npc_superclass ?NPCsuperclass ;
+                                          enpkg:has_npc_class ?NPCclass ;
+                                          enpkg:has_wd_id ?wd_id .
+                                        SERVICE idsm:wikidata {
+                                          ?smiles sachem:similarCompoundSearch [
+                                            sachem:query "${smiles}";
+                                            sachem:cutoff "${tanimoto}"^^xsd:double ].
+                                        }      
+                }
+                LIMIT ${max}`;
+    console.log(query);
+
+    // Query the GraphDB using the SPARQL query and get the results
+    const graph = await queryGraphDB(query).catch((error) => {
+      console.error("Error while querying GraphDB:", error);
+      throw error;  // Throw the error to be caught in the outer try-catch block
+    });
+
+    // Render the 'exploreSparql' page with the query results
+    return {results: graph.nodes, headers: graph.headers};  
+  } catch (error) {
+    console.error('An error occurred in handleSPARQLSimSearch:', error);
+    throw error;  // Re-throw the error if you want to handle it further up the call stack
+  }
 }
+
 
 // Function to fetch data for table display
 async function getTableData(column, structure, group, max) {
-  // SQL query to select data where column value is in the provided structure
-  let query = `SELECT * FROM data WHERE ${column} = ANY($1)`;
-  let params = [structure];
+  try {
+    // SQL query to select data where column value is in the provided structure
+    let query = `SELECT * FROM data WHERE ${column} = ANY($1)`;
+    let params = [structure];
 
-  // If group is provided, append to SQL query
-  if (group) {
-    query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
-    params.push(group);
+    // If group is provided, append to SQL query
+    if (group) {
+      query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
+      params.push(group);
+    }
+
+    // Limit the query results
+    query += ' LIMIT $' + (params.length + 1);
+    params.push(max);
+
+    // Execute the query
+    const result = await db.query(query, params);
+    return { result };
+  } catch (error) {
+    console.error(`Error in getTableData function with column ${column}, structure ${structure}, group ${group} and max ${max}:`, error);
+    throw error;  // Re-throw the error if you want to handle it further up the call stack
   }
-
-  // Limit the query results
-  query += ' LIMIT $' + (params.length + 1);
-  params.push(max);
-
-  // Execute the query
-  const result = await db.query(query, params);
-  return { result };
 }
 
 
 // Function to fetch data for graph display
 async function getGraphData(column, structure, group, max) {
-  // SQL query to select taxonomical data where column value is in the provided structure
-  let query = `SELECT organism_taxonomy_01domain as domain,
-           organism_taxonomy_02kingdom as kingdom,
-           organism_taxonomy_03phylum as phylum,
-           organism_taxonomy_04class as class,
-           organism_taxonomy_06family as family,
-           organism_taxonomy_07tribe as tribe,
-           organism_taxonomy_08genus as genus,
-           organism_taxonomy_09species as species,
-           organism_taxonomy_10varietas as varietas
-           FROM data WHERE ${column} = ANY($1)`;
+  try {
+    // SQL query to select taxonomical data where column value is in the provided structure
+    let query = `SELECT organism_taxonomy_01domain as domain,
+             organism_taxonomy_02kingdom as kingdom,
+             organism_taxonomy_03phylum as phylum,
+             organism_taxonomy_04class as class,
+             organism_taxonomy_06family as family,
+             organism_taxonomy_07tribe as tribe,
+             organism_taxonomy_08genus as genus,
+             organism_taxonomy_09species as species,
+             organism_taxonomy_10varietas as varietas
+             FROM data WHERE ${column} = ANY($1)`;
 
-  let params = [structure];
+    let params = [structure];
 
-  // If group is provided, append to SQL query
-  if (group) {
-    query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
-    params.push(group);
+    // If group is provided, append to SQL query
+    if (group) {
+      query += ` AND $2 = ANY (array[${taxonomyColumns.join(', ')}])`;
+      params.push(group);
+    }
+
+    // Limit the query results
+    query += ' LIMIT $' + (params.length + 1);
+    params.push(max);
+
+    // Execute the query
+    const graphData = await db.query(query, params);
+    const totalCount = graphData.rowCount;
+
+    // Build graph data from the results
+    const result = buildGraphData(graphData.rows);
+
+    return { result, totalCount };
+  } catch (error) {
+    console.error(`Error in getGraphData function with column ${column}, structure ${structure}, group ${group} and max ${max}:`, error);
+    throw error;  // Re-throw the error if you want to handle it further up the call stack
   }
-
-  // Limit the query results
-  query += ' LIMIT $' + (params.length + 1);
-  params.push(max);
-
-  // Execute the query
-  const graphData = await db.query(query, params);
-  const totalCount = graphData.rowCount;
-
-  // Build graph data from the results
-  const result = buildGraphData(graphData.rows);
-
-  return { result, totalCount };
 }
+
 
 // Function to convert rows of taxonomy data into hierarchical structure for graph visualization
 function buildGraphData(rows) {
-  // Initialize root of the graph
-  const root = { name: "Root", children: [], size: 0 };
+  try {
+    // Initialize root of the graph
+    const root = { name: "Root", children: [], size: 0 };
 
-  // For each row of data
-  rows.forEach(row => {
-    let currentLevel = root.children;
-    // For each level of taxonomy, add a node to the graph
-    [row.domain, row.kingdom, row.phylum, row.class, row.family, row.tribe, row.genus, row.species, row.varietas].forEach((level, i, arr) => {
-      // Look for an existing node at the current level
-      let existingPath = currentLevel.find(d => d.name === level);
-      if (existingPath) {
-        // If found, descend to its children and increment size
-        existingPath.size++;
-        currentLevel = existingPath.children;
-      } else {
-        // If not found, create a new node and descend to it
-        const newPath = { name: level, children: [], size: 1 };
-        currentLevel.push(newPath);
-        currentLevel = newPath.children;
-      }
+    // For each row of data
+    rows.forEach(row => {
+      let currentLevel = root.children;
+      // For each level of taxonomy, add a node to the graph
+      [row.domain, row.kingdom, row.phylum, row.class, row.family, row.tribe, row.genus, row.species, row.varietas].forEach((level, i, arr) => {
+        // Look for an existing node at the current level
+        let existingPath = currentLevel.find(d => d.name === level);
+        if (existingPath) {
+          // If found, descend to its children and increment size
+          existingPath.size++;
+          currentLevel = existingPath.children;
+        } else {
+          // If not found, create a new node and descend to it
+          const newPath = { name: level, children: [], size: 1 };
+          currentLevel.push(newPath);
+          currentLevel = newPath.children;
+        }
+      });
     });
-  });
 
-  return root;
+    return root;
+  } catch (error) {
+    console.error("Error in buildGraphData function:", error);
+    throw error;  // Re-throw the error if you want to handle it further up the call stack
+  }
 }
 
 
 // Function to query a GraphDB and return the data
 async function queryGraphDB(query) {
-  // Define the endpoint, readTimeout and writeTimeout for GraphDB
-  const endpoint = process.env.ENDPOINT_GRAPHDB;
-  const readTimeout = 300000;
-  const writeTimeout = 300000;
-  
-  // Set up the configuration for the RDFRepositoryClient
-  const config = new RepositoryClientConfig(endpoint)
-      .setEndpoints([process.env.REPO_GRAPHDB])
-      .setHeaders({
-        'Accept': RDFMimeType.TURTLE
-      })
-      .setReadTimeout(readTimeout)
-      .setWriteTimeout(writeTimeout);
-      
-  // Create a new RDFRepositoryClient with the config
-  const repository = new RDFRepositoryClient(config);
+  try {
+    // Define the endpoint, readTimeout and writeTimeout for GraphDB
+    const endpoint = process.env.ENDPOINT_GRAPHDB;
+    const readTimeout = 300000;
+    const writeTimeout = 300000;
+    
+    // Set up the configuration for the RDFRepositoryClient
+    const config = new RepositoryClientConfig(endpoint)
+        .setEndpoints([process.env.REPO_GRAPHDB])
+        .setHeaders({
+          'Accept': RDFMimeType.TURTLE
+        })
+        .setReadTimeout(readTimeout)
+        .setWriteTimeout(writeTimeout);
+        
+    // Create a new RDFRepositoryClient with the config
+    const repository = new RDFRepositoryClient(config);
 
-  // Register a new SparqlJsonResultParser
-  repository.registerParser(new SparqlJsonResultParser());
+    // Register a new SparqlJsonResultParser
+    repository.registerParser(new SparqlJsonResultParser());
 
-  // Define the payload for the query
-  const payload = new GetQueryPayload()
-                        .setQuery(query)
-                        .setQueryType(QueryType.SELECT)
-                        .setResponseType(RDFMimeType.SPARQL_RESULTS_JSON)
-                        .setLimit(100);
+    // Define the payload for the query
+    const payload = new GetQueryPayload()
+                          .setQuery(query)
+                          .setQueryType(QueryType.SELECT)
+                          .setResponseType(RDFMimeType.SPARQL_RESULTS_JSON)
+                          .setLimit(100);
 
-  // Return a promise that resolves with the data from the GraphDB
-  return new Promise((resolve, reject) => {
-    const nodes = [];
-    let headers = [];
+    // Return a promise that resolves with the data from the GraphDB
+    return new Promise((resolve, reject) => {
+      const nodes = [];
+      let headers = [];
 
-    // Query the repository with the payload
-    repository.query(payload).then((stream) => {
-      stream.on('data', (bindings) => {
-        const node = {};
-        // For each binding in the data, add it to the node
-        for (const binding in bindings) {
-          if (bindings.hasOwnProperty(binding)) {
-            node[binding] = bindings[binding].value;  // use binding as id and bindings[binding].value as label
-            if (!headers.includes(binding)) {
-              headers.push(binding);  // add the binding to the headers if it's not already there
+      // Query the repository with the payload
+      repository.query(payload).then((stream) => {
+        stream.on('data', (bindings) => {
+          const node = {};
+          // For each binding in the data, add it to the node
+          for (const binding in bindings) {
+            if (bindings.hasOwnProperty(binding)) {
+              node[binding] = bindings[binding].value;  // use binding as id and bindings[binding].value as label
+              if (!headers.includes(binding)) {
+                headers.push(binding);  // add the binding to the headers if it's not already there
+              }
             }
           }
-        }
-        nodes.push(node);
-      });
-      stream.on('end', () => {
-        // Resolve the promise with the graph data and the headers when the stream ends
-        resolve({nodes: nodes, headers: headers});
-      });
+          nodes.push(node);
+        });
+        stream.on('end', () => {
+          // Resolve the promise with the graph data and the headers when the stream ends
+          resolve({nodes: nodes, headers: headers});
+        });
 
-      stream.on('error', (error) => {
-        // Reject the promise if there's an error
-        reject(error);
+        stream.on('error', (error) => {
+          // Reject the promise if there's an error
+          reject(error);
+        });
       });
     });
-  });
+  } catch (error) {
+    console.error('Error while querying GraphDB:', error);
+    throw error; // Re-throw the error if you want to handle it further up the call stack
+  }
 }
+
 
 // Handlers mapping object for each tab in the application UI
 const tabHandlers = {
@@ -552,7 +668,7 @@ router.all('/explore/structure', async (req, res) => {
           }
         } else if (display === 'graph'){
           hits = results.totalCount;
-          res.render('exploreStructure', { columns, results: results.result, hits: hits  , display: display});
+          res.render('exploreStructure', { columns, results: results.result, hits: hits  , display: display, source: datasource});
         }
       } else {
         // If the handler function does not exist, send an error message

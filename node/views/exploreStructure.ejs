@@ -209,7 +209,11 @@
               <%- include('./partials/exploreTable.ejs') %>
             <% } %>
           <% } else if(display === 'graph') { %>
-            <%- include('./partials/exploreGraph.ejs') %>
+            <% if(source === 'dbgi') { %>
+              <h3 class="center">The Graphical View isn't available for the DBGI data for now</h3>
+            <% } else if(source === 'lotus') { %>
+              <%- include('./partials/exploreGraph.ejs') %>
+            <% } %>
           <% } %>
 
     </div>    
