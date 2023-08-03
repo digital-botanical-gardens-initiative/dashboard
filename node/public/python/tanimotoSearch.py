@@ -1,6 +1,3 @@
-import itertools
-import pandas as pd
-import numpy as np
 from rdkit.Chem import AllChem, DataStructs, rdFMCS
 from rdkit import Chem
 import sys

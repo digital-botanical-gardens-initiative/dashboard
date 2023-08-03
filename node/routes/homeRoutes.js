@@ -3,81 +3,165 @@ const express = require('express');
 const router = express.Router();
 const db = require('./db');
 
+// Importing necessary modules from 'graphdb' package
+const {ServerClient, GraphDBServerClient, ServerClientConfig} = require('graphdb').server;
+const {RepositoryClientConfig, RDFRepositoryClient} = require('graphdb').repository;
+const {RDFMimeType} = require('graphdb').http;
+const {SparqlJsonResultParser} = require('graphdb').parser;
+const {GetQueryPayload, QueryType} = require('graphdb').query;
+
 router.use(express.urlencoded({ extended: true }));
 
-router.get('/', async (req, res) => {
-
-    const plants = await db.query(`
-        SELECT DISTINCT organism_taxonomy_08genus
-        FROM data
-        WHERE organism_taxonomy_02kingdom = 'Archaeplastida'`);
-
-
-    
-/*     const resultMol = await db.query(`
-        SELECT 
-            structure_taxonomy_npclassifier_01pathway as pathway,
-            structure_taxonomy_npclassifier_02superclass as superclass,
-            structure_taxonomy_npclassifier_03class as class
-        FROM data
-        GROUP BY pathway, superclass, class
-    `);
-
-    const dataMol = resultMol.rows;
-
-    const treeMol = { name: "Root", children: [] };
-    dataMol.forEach(row => {
-        let currentLevel = treeMol.children;
-        [row.pathway, row.superclass, row.class].forEach(level => {
-            let existingPath = currentLevel.find(d => d.name === level);
-            if (existingPath) {
-                currentLevel = existingPath.children;
-            } else {
-                const newPath = { name: level, children: [] };
-                currentLevel.push(newPath);
-                currentLevel = newPath.children;
+// Function to query a GraphDB and return the data
+async function queryGraphDB(query) {
+    try {
+      // Define the endpoint, readTimeout and writeTimeout for GraphDB
+      const endpoint = process.env.ENDPOINT_GRAPHDB;
+      const readTimeout = 300000;
+      const writeTimeout = 300000;
+      
+      // Set up the configuration for the RDFRepositoryClient
+      const config = new RepositoryClientConfig(endpoint)
+          .setEndpoints([process.env.REPO_GRAPHDB])
+          .setHeaders({
+            'Accept': RDFMimeType.TURTLE
+          })
+          .setReadTimeout(readTimeout)
+          .setWriteTimeout(writeTimeout);
+          
+      // Create a new RDFRepositoryClient with the config
+      const repository = new RDFRepositoryClient(config);
+  
+      // Register a new SparqlJsonResultParser
+      repository.registerParser(new SparqlJsonResultParser());
+  
+      // Define the payload for the query
+      const payload = new GetQueryPayload()
+                            .setQuery(query)
+                            .setQueryType(QueryType.SELECT)
+                            .setResponseType(RDFMimeType.SPARQL_RESULTS_JSON)
+                            .setLimit(100);
+  
+      // Return a promise that resolves with the data from the GraphDB
+      return new Promise((resolve, reject) => {
+        const nodes = [];
+        let headers = [];
+  
+        // Query the repository with the payload
+        repository.query(payload).then((stream) => {
+          stream.on('data', (bindings) => {
+            const node = {};
+            // For each binding in the data, add it to the node
+            for (const binding in bindings) {
+              if (bindings.hasOwnProperty(binding)) {
+                node[binding] = bindings[binding].value;  // use binding as id and bindings[binding].value as label
+                if (!headers.includes(binding)) {
+                  headers.push(binding);  // add the binding to the headers if it's not already there
+                }
+              }
             }
+            nodes.push(node);
+          });
+          stream.on('end', () => {
+            // Resolve the promise with the graph data and the headers when the stream ends
+            resolve({nodes: nodes, headers: headers});
+          });
+  
+          stream.on('error', (error) => {
+            // Reject the promise if there's an error
+            reject(error);
+          });
         });
-    });
+      });
+    } catch (error) {
+      console.error('Error while querying GraphDB:', error);
+      throw error; // Re-throw the error if you want to handle it further up the call stack
+    }
+  }
 
+function parseSPARQLResult(result) {
+    // Mock-up result parsing
+    // Adjust this function to match the actual format of your SPARQL results
+    return {
+        count_of_species: result[0].count_of_species,
+        count_of_genus: result[0].count_of_genus,
+        count_of_families: result[0].count_of_families,
+        count_of_orders: result[0].count_of_orders,
+        count_of_kingdoms: result[0].count_of_kingdoms
+    };
+}
 
-    const resultOrg = await db.query(`
-        SELECT 
-        organism_taxonomy_01domain as domain,
-        organism_taxonomy_02kingdom as kingdom,
-        organism_taxonomy_03phylum as phylum,
-        organism_taxonomy_04class as class,
-        organism_taxonomy_06family as family,
-        organism_taxonomy_07tribe as tribe,
-        organism_taxonomy_08genus as genus
-        FROM data
-        GROUP BY domain, kingdom, phylum, class, family, tribe, genus
-    `);
-
-    const dataOrg = resultOrg.rows;
-
-    const treeOrg = { name: "Root", children: [] };
-    dataOrg.forEach(row => {
-        let currentLevel = treeOrg.children;
-        [row.domain, row.kingdom, row.phylum, row.class, row.family,
-        row.tribe, row.genus].forEach(level => {
-            let existingPath = currentLevel.find(d => d.name === level);
-            if (existingPath) {
-                currentLevel = existingPath.children;
-            } else {
-                const newPath = { name: level, children: [] };
-                currentLevel.push(newPath);
-                currentLevel = newPath.children;
-            }
+async function CountTaxon() {
+    try {  
+      let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
+      PREFIX enpkgmodule: <https://enpkg.commons-lab.org/module/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+      PREFIX wd: <http://www.wikidata.org/entity/>
+      
+      SELECT 
+      (COUNT(DISTINCT ?species_name) AS ?count_of_species)
+      (COUNT(DISTINCT ?genus_name) AS ?count_of_genus)
+      (COUNT(DISTINCT ?family_name) AS ?count_of_families)
+      (COUNT(DISTINCT ?order_name) AS ?count_of_orders)
+      (COUNT(DISTINCT ?kingdom_name) AS ?count_of_kingdoms)
+      WHERE
+      {  
+          ?material enpkg:has_lab_process ?extract .
+          ?material enpkg:has_wd_id ?wd_sp .
+          OPTIONAL
+          {
+                  SERVICE <https://query.wikidata.org/sparql> {
+                  ?wd_sp wdt:P225 ?species_name .
+                  ?family wdt:P31 wd:Q16521 ;
+                      wdt:P105 wd:Q35409 ;
+                      wdt:P225 ?family_name ;
+                      ^wdt:P171* ?wd_sp .
+                  ?genus wdt:P31 wd:Q16521 ;
+                      wdt:P105 wd:Q34740 ;
+                      wdt:P225 ?genus_name ;
+                      ^wdt:P171* ?wd_sp  .
+                  ?kingdom wdt:P31 wd:Q16521 ;
+                      wdt:P105 wd:Q36732 ;
+                      wdt:P225 ?kingdom_name ;
+                      ^wdt:P171* ?wd_sp .
+                  ?order wdt:P31 wd:Q16521 ;
+                      wdt:P105 wd:Q36602 ;
+                      wdt:P225 ?order_name ;
+                      ^wdt:P171* ?wd_sp .
+              }
+          }
+      } 
+      `;
+  
+        // Query the GraphDB using the SPARQL query and get the results
+        const result = await queryGraphDB(query).catch((error) => {
+            console.error("Error while querying GraphDB:", error);
+            throw error;  // Throw the error to be caught in the outer try-catch block
         });
-    });
 
-    res.render('home', { treeMol, treeOrg }); */
+        // Parse the SPARQL result and return it
+        return parseSPARQLResult(result.nodes);
+    } catch (error) {
+      console.error('An error occurred:', error);
+      throw error;  // Re-throw the error if you want to handle it further up the call stack
+    }
+  }
 
-    var result = plants.rowCount;
+router.all('/', async (req, res) => {
+    try {
+        // Fetch the data from CountTaxon
+        const data = await CountTaxon();
 
-    res.render('home', {result});
+        // Assume data returns a row of results as an object e.g., { species_count: 10, order_count: 20, ...}
+        // Pass this data into the 'home' view
+        res.render('home', {results: data});
+    } catch (error) {
+        console.error('An error occurred:', error);
+        res.status(500).send('An error occurred');
+    }
 });
+
 
 
 module.exports = router;
