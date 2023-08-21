@@ -19,9 +19,14 @@
             <!-- Styles -->
     <style>
     #chartdiv {
-      width: 100%;
+      width: 50%;
       height: 500px;
     }
+    #chartdiv2 {
+      width: 50%;
+      height: 500px;
+    }
+
     </style>
     
     <!-- Resources -->
@@ -36,22 +41,22 @@
         const TotalSpecies = 2103820;
         const TotalPlantSpecies = 378416;
         const CollectedSpecies = <%= results.count_of_species %>;
-        
+
         const TotalGenus = 204205;
         const TotalPlantGenus = 21259;
         const CollectedGenus = <%= results.count_of_genus %>;
-        
+
         const TotalFamily = 13307;
         const TotalPlantFamily = 1085;
         const CollectedFamily = <%= results.count_of_families %>;
-        
+
         const TotalOrder = 1596;
         const TotalPlantOrder = 235;
         const CollectedOrder = <%= results.count_of_orders %>;
-        
+
         //const TotalClass =300;
         //const CollectedClass = 30;
-        
+
         const TotalKingdom = 7;
         const CollectedKingdom =  <%= results.count_of_kingdoms %>;
     </script>
@@ -70,9 +75,14 @@
 
         <img src="assets/DBGI.png" width="100%" height="100%"/>
 
+        <br>
+        <hr>
+        <br>
+        <br>
     <!-- HTML -->
         <div class="row">
             <div class=column id="chartdiv"></div>
+            <div class=column id="chartdiv2"></div>
         </div>
         
     </div>
