@@ -1,4 +1,12 @@
-// organismRoutes.js
+/**
+ * File/Folder Overview:
+ * organismRoutes.js - Defines routes and handlers for fetching and displaying organism data.
+ * 
+ * Usage Examples:
+ * To use this module in an Express app:
+ * const organismRoutes = require('./path_to_this_file');
+ * app.use(organismRoutes);
+ */
 
 // Import required modules
 const express = require('express');
@@ -9,7 +17,19 @@ const axios = require('axios');
 // Middleware for parsing URL-encoded bodies
 router.use(express.urlencoded({ extended: true }));
 
-// Function to fetch organism image from Wikidata
+/**
+ * Function/Method Comments:
+ * An asynchronous function to fetch an image of an organism from Wikidata.
+ * 
+ * Parameters:
+ * wikidata_id - The identifier associated with the organism on Wikidata.
+ * 
+ * Expected outputs:
+ * A URL string pointing to the image of the organism or null if an error occurs.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to the Axios request. Returns null if an error is encountered.
+ */
 async function fetchImage(wikidata_id) {
   const query_wikidata = encodeURIComponent(`
     SELECT ?image WHERE {
@@ -29,7 +49,15 @@ async function fetchImage(wikidata_id) {
   }
 }
 
-// Handler for all requests to '/organism' route
+/**
+ * Function/Method Comments:
+ * Handles all requests (GET, POST, etc.) to the '/organism' route.
+ * For POST requests, it retrieves organisms matching a search term.
+ * For other requests, it displays a list of example organisms.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to database queries or other unexpected issues. Sends a 500 status code response for caught errors.
+ */
 router.all('/organism', async (req, res) => {
   try {
     // Example query to retrieve organism names
@@ -74,7 +102,17 @@ router.all('/organism', async (req, res) => {
   }
 });
 
-// Handler for the '/organism/:id' route
+/**
+ * Function/Method Comments:
+ * Handles GET requests to the '/organism/:id' route.
+ * Retrieves and displays detailed data for a specific organism based on the provided ID.
+ * 
+ * Parameters:
+ * req.params.id - The ID of the organism to retrieve details for.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to database queries, Axios requests, or other unexpected issues. Sends a 500 status code response for caught errors.
+ */
 router.get('/organism/:id', async (req, res) => {
   try {
     const id = req.params.id;

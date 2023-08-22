@@ -1,4 +1,8 @@
-// elementRoutes.js
+/**
+ * File/Folder Overview:
+ * elementRoutes.js -
+ * Defines routes and handlers for fetching and displaying elements (chemical structures) and their details.
+ */
 
 // Import required modules
 const express = require('express');
@@ -8,7 +12,15 @@ const db = require('./db');
 // Middleware for parsing URL-encoded bodies
 router.use(express.urlencoded({ extended: true }));
 
-// Handler for all requests to '/element' route
+/**
+ * Function/Method Comments:
+ * Handles all requests (GET, POST, etc.) to the '/element' route.
+ * For POST requests, it processes a search term and fetches matching structure names from the database.
+ * For other requests, it just displays structure name examples.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to database queries or other unexpected issues. Sends a 500 status code response for caught errors.
+ */
 router.all('/element', async (req, res) => {
   try {
     // Example query to retrieve structure names
@@ -52,7 +64,17 @@ router.all('/element', async (req, res) => {
   }
 });
 
-// Handler for the '/element/:id' route
+/**
+ * Function/Method Comments:
+ * Handles GET requests to the '/element/:id' route.
+ * Fetches detailed data about an element (chemical structure) based on its ID from the database and displays it.
+ * 
+ * Parameters:
+ * req.params.id - The ID of the element (chemical structure) to fetch details for.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to database queries or other unexpected issues. Sends a 500 status code response for caught errors.
+ */
 router.get('/element/:id', async (req, res) => {
   try {
     const id = req.params.id;

@@ -1,4 +1,11 @@
-// homeRoutes.js
+/**
+ * homeRoutes.js
+ * 
+ * This module defines the routes and logic for the home page of the application.
+ * It contains functions to interact with a GraphDB, parse the result, and fetch taxon counts.
+ * Additionally, it includes caching logic to improve performance on frequent requests.
+ */
+
 const express = require('express');
 const router = express.Router();
 const db = require('./db');
@@ -14,7 +21,12 @@ const Cache = new NodeCache();
 
 router.use(express.urlencoded({ extended: true }));
 
-// Function to query a GraphDB and return the data
+/**
+ * Queries a GraphDB with a provided SPARQL query and returns the result.
+ * 
+ * @param {string} query - The SPARQL query to be executed.
+ * @returns {Promise} A promise that resolves with the GraphDB data or rejects with an error.
+ */
 async function queryGraphDB(query) {
     try {
       // Define the endpoint, readTimeout and writeTimeout for GraphDB
@@ -81,6 +93,14 @@ async function queryGraphDB(query) {
     }
   }
 
+
+/**
+ * Parses the raw SPARQL result to extract relevant information.
+ * 
+ * @param {object} result - Raw result from the GraphDB.
+ * @returns {object} An object containing counts of species, genus, families, orders, and kingdoms.
+ */
+
 function parseSPARQLResult(result) {
     // Mock-up result parsing
     // Adjust this function to match the actual format of your SPARQL results
@@ -93,6 +113,11 @@ function parseSPARQLResult(result) {
     };
 }
 
+/**
+ * Fetches taxon counts including species, genus, families, orders, and kingdoms.
+ * 
+ * @returns {Promise} A promise that resolves with the taxon count data or rejects with an error.
+ */
 async function CountTaxon() {
     try {  
       let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
@@ -150,6 +175,12 @@ async function CountTaxon() {
     }
   }
 
+/**
+ * Router handler for the home route.
+ * 
+ * Checks the cache for data first, if not found, then queries the database.
+ * Sends the resulting data to the 'home' view for rendering.
+ */
 router.all('/', async (req, res) => {
     try {
         // Fetch the data from CountTaxon

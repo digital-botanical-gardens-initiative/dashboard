@@ -1,4 +1,8 @@
-// downloadRoutes.js
+/**
+ * File/Folder Overview:
+ * downloadRoutes.js
+ * This file contains routes and handlers for downloading database content in various formats, such as CSV and JSON.
+ */
 
 // Import required modules
 const express = require('express');
@@ -11,7 +15,13 @@ const jsonfile = require('jsonfile');
 // Middleware for parsing URL-encoded bodies
 router.use(express.urlencoded({ extended: true }));
 
-// Handler for the '/download' route
+/**
+ * Function/Method Comments:
+ * Handles GET requests to the '/download' route.
+ * Renders the 'download' view .
+ * Error Handling:
+ * Catches and logs errors, and sends a 500 status code response in case of unexpected errors.
+ */
 router.get('/download', (req, res) => {
   try {
     // Render the 'download' view with the provided title
@@ -22,7 +32,13 @@ router.get('/download', (req, res) => {
   }
 });
 
-// Handler for the '/download/csv' route
+/**
+ * Function/Method Comments:
+ * Handles GET requests to the '/download/csv' route.
+ * Fetches data from the database, converts it to CSV format, writes it to a file, and initiates a download for the user.
+ * Error Handling:
+ * Catches and logs errors. Specific handling for file not found (ENOENT) errors, and other errors redirect to '/download' with a 500 status code.
+ */
 router.get('/download/csv', async (req, res) => {
   try {
     // Query the database to retrieve data
@@ -49,7 +65,13 @@ router.get('/download/csv', async (req, res) => {
   }
 });
 
-// Handler for the '/download/json' route
+/**
+ * Function/Method Comments:
+ * Handles GET requests to the '/download/json' route.
+ * Fetches data from the database, writes it to a JSON file, and initiates a download for the user.
+ * Error Handling:
+ * Catches and logs errors. Specific handling for file not found (ENOENT) errors, and other errors redirect to '/download' with a 500 status code.
+ */
 router.get('/download/json', async (req, res) => {
   try {
     // Query the database to retrieve data
