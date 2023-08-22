@@ -231,3 +231,12 @@ ul.organisms-list {
     background: url('loader.gif') 50% 50% no-repeat rgb(249,249,249);
     opacity: .8;
     }
+
+#chartdiv {
+  width: 50%;
+  height: 500px;
+}
+#chartdiv2 {
+  width: 50%;
+  height: 500px;
+}

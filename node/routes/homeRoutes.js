@@ -9,6 +9,8 @@ const {RepositoryClientConfig, RDFRepositoryClient} = require('graphdb').reposit
 const {RDFMimeType} = require('graphdb').http;
 const {SparqlJsonResultParser} = require('graphdb').parser;
 const {GetQueryPayload, QueryType} = require('graphdb').query;
+const NodeCache = require( "node-cache" );
+const Cache = new NodeCache();
 
 router.use(express.urlencoded({ extended: true }));
 
@@ -151,8 +153,11 @@ async function CountTaxon() {
 router.all('/', async (req, res) => {
     try {
         // Fetch the data from CountTaxon
-        const data = await CountTaxon();
-
+        let data = Cache.get( "myKey" );  // Initialize data with cached value
+        if (data == undefined){    
+          data = await CountTaxon();  // Assign directly to the data variable
+          Cache.set("myKey", data, 100000);
+        }
         // Assume data returns a row of results as an object e.g., { species_count: 10, order_count: 20, ...}
         // Pass this data into the 'home' view
         res.render('home', {results: data});
