@@ -4,6 +4,8 @@
  * It handles initialization of middlewares, route handling, error pages, and server startup.
  */
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // should only be used for local development!!! Do not use this method in production environments, as it would expose the app to security risks.
+
 // import modules
 const express = require('express');
 
