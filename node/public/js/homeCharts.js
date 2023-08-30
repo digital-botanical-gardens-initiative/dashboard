@@ -114,7 +114,7 @@ am5.ready(function() {
 
     // Add chart titles
     chart.children.unshift(am5.Label.new(root, {
-      text: "Progress of Sampling by All Taxon Rank",
+      text: "Current coverage of all living beings",
       fontSize: 25,
       fontWeight: "500",
       textAlign: "center",
@@ -125,7 +125,7 @@ am5.ready(function() {
       paddingBottom: 0
     }));
     chart2.children.unshift(am5.Label.new(root2, {
-      text: "Progress of Sampling by Plant Taxon Rank",
+      text: "Current coverage of plants",
       fontSize: 25,
       fontWeight: "500",
       textAlign: "center",
