@@ -275,8 +275,23 @@ async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
 }
 
 
-// Function for finding exact text matches in the database
-async function exactTextMatch(display, column, text, max){
+/**
+ * Function/Method Comments:
+ * An asynchronous function that finds exact text matches in the database based on the provided criteria.
+ * The function searches a specified column for exact matches of the text and returns the data in the desired format.
+ * 
+ * Parameters:
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - column: The database column where the search should be conducted.
+ * - text: The exact text string to be matched against the database column.
+ * - max: The maximum number of results to fetch.
+ * 
+ * Expected outputs:
+ * Returns an object containing the data that matches the provided search criteria.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to the search process. Rethrows errors to allow external error handling.
+ */async function exactTextMatch(display, column, text, max){
   try {
     var group = ''
 
@@ -314,7 +329,25 @@ async function exactTextMatch(display, column, text, max){
   }
 } */
 
-// function to handle Exact match pn DBGI data with SPARQL query
+/**
+ * Function/Method Comments:
+ * An asynchronous function to process and handle exact matches on DBGI data using a SPARQL query.
+ * Converts the provided SMILES data to InChI format and formulates a SPARQL query for fetching matching data.
+ * 
+ * Parameters:
+ * - radio: Choice of structure type (either 'structure_inchi' or 'structure_smiles').
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - smiles: The SMILES string to be processed.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * - tanimoto: Threshold for Tanimoto similarity.
+ * 
+ * Expected outputs:
+ * Returns an object containing the results of the SPARQL query.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to the Python script conversion and SPARQL querying. Rethrows errors for further handling.
+ */
 async function handleSPARQLExactMatch(radio, display, smiles, group, max, tanimoto) {
   try {
     // Convert SMILES to InChI using Python
@@ -387,7 +420,25 @@ async function handleSPARQLExactMatch(radio, display, smiles, group, max, tanimo
   return { result: [] };
 }
 
-
+/**
+ * Function/Method Comments:
+ * An asynchronous function to process and handle substructure searches on DBGI data using a SPARQL query.
+ * Queries the database for structures containing the provided substructure.
+ * 
+ * Parameters:
+ * - radio: Choice of structure type (either 'structure_inchi' or 'structure_smiles').
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - smiles: The SMILES string to be processed.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * - tanimoto: Threshold for Tanimoto similarity.
+ * 
+ * Expected outputs:
+ * Returns an object containing the results of the SPARQL query.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to querying GraphDB. Rethrows errors for further handling.
+ */
 async function handleSPARQLSubSearch(radio, display, smiles, group, max, tanimoto) {
   try {
     console.log(smiles);
@@ -431,7 +482,25 @@ async function handleSPARQLSubSearch(radio, display, smiles, group, max, tanimot
   }
 }
 
-
+/**
+ * Function/Method Comments:
+ * An asynchronous function that processes and handles similarity searches on DBGI data using a SPARQL query.
+ * Constructs the query to find data similar to the provided SMILES string within the specified Tanimoto similarity threshold.
+ * 
+ * Parameters:
+ * - radio: Choice of structure type (either 'structure_inchi' or 'structure_smiles').
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - smiles: The SMILES string to be processed.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * - tanimoto: Threshold for Tanimoto similarity.
+ * 
+ * Expected outputs:
+ * Returns an object containing the results of the SPARQL query.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to the SPARQL query construction and execution. Rethrows errors for external handling.
+ */
 async function handleSPARQLSimSearch(radio, display, smiles, group, max, tanimoto) {
   try {
     let query = `PREFIX enpkg: <https://enpkg.commons-lab.org/kg/>
@@ -480,7 +549,23 @@ async function handleSPARQLSimSearch(radio, display, smiles, group, max, tanimot
 }
 
 
-// Function to fetch data for table display
+/**
+ * Function/Method Comments:
+ * An asynchronous function that fetches data suitable for table display based on the specified criteria.
+ * Queries the database using SQL to retrieve rows where the specified column contains the provided structure.
+ * 
+ * Parameters:
+ * - column: The database column where the search should be conducted.
+ * - structure: The structure to be matched against the database column.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * 
+ * Expected outputs:
+ * Returns an object containing the query results.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to SQL query construction and execution. Rethrows errors for external handling.
+ */
 async function getTableData(column, structure, group, max) {
   try {
     // SQL query to select data where column value is in the provided structure
@@ -507,7 +592,23 @@ async function getTableData(column, structure, group, max) {
 }
 
 
-// Function to fetch data for graph display
+/**
+ * Function/Method Comments:
+ * An asynchronous function that fetches data suitable for graph display based on the specified criteria.
+ * Uses SQL to retrieve taxonomical data where the specified column contains the provided structure.
+ * 
+ * Parameters:
+ * - column: The database column for the search.
+ * - structure: The structure to be matched against the database column.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * 
+ * Expected outputs:
+ * Returns an object containing the graph data and total count of results.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to SQL query construction and execution. Rethrows errors for external handling.
+ */
 async function getGraphData(column, structure, group, max) {
   try {
     // SQL query to select taxonomical data where column value is in the provided structure
@@ -549,7 +650,20 @@ async function getGraphData(column, structure, group, max) {
 }
 
 
-// Function to convert rows of taxonomy data into hierarchical structure for graph visualization
+/**
+ * Function/Method Comments:
+ * A function that converts rows of taxonomy data into a hierarchical structure suitable for graph visualization.
+ * Iterates over rows and constructs a hierarchical graph structure from taxonomy data.
+ * 
+ * Parameters:
+ * - rows: The rows of taxonomy data to be converted.
+ * 
+ * Expected outputs:
+ * Returns the root of the graph containing the hierarchical structure.
+ * 
+ * Error Handling:
+ * Catches and logs errors encountered during graph construction. Rethrows errors for external handling.
+ */
 function buildGraphData(rows) {
   try {
     // Initialize root of the graph
@@ -583,7 +697,20 @@ function buildGraphData(rows) {
 }
 
 
-// Function to query a GraphDB and return the data
+/**
+ * Function/Method Comments:
+ * An asynchronous function that queries a GraphDB based on the provided SPARQL query and returns the data.
+ * Interacts with the GraphDB, passing the query and processing the stream of results to extract the desired data.
+ * 
+ * Parameters:
+ * - query: The SPARQL query to execute against the GraphDB.
+ * 
+ * Expected outputs:
+ * Returns a promise that resolves with the data from the GraphDB.
+ * 
+ * Error Handling:
+ * Catches and logs errors encountered during GraphDB interaction. Rethrows errors for external handling.
+ */
 async function queryGraphDB(query) {
   try {
     // Define the endpoint, readTimeout and writeTimeout for GraphDB
