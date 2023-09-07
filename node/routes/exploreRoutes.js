@@ -128,7 +128,25 @@ async function sendDataPython(script, query, smiles, tanimoto = 1) {
 }
 
 
-// Function to handle 'exact_search' tab
+/**
+ * Function/Method Comments:
+ * An asynchronous function to process and handle exact matches based on the provided parameters. 
+ * Primarily converts SMILES to InChI using a Python script.
+ * 
+ * Parameters:
+ * - radio: Choice of structure type (either 'structure_inchi' or 'structure_smiles').
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - smiles: The SMILES string to be processed.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * - tanimoto: Threshold for Tanimoto similarity.
+ * 
+ * Expected outputs:
+ * Data that matches the provided criteria.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to processing and fetching the data. Rethrows errors to allow external error handling.
+ */
 async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
   try {
     // Convert SMILES to InChI using Python
@@ -165,7 +183,25 @@ async function handleExactMatch(radio, display, smiles, group, max, tanimoto) {
   }
 }
 
-// Function to handle 'sub_search' tab
+/**
+ * Function/Method Comments:
+ * An asynchronous function to process and handle substructure searches based on the provided parameters. 
+ * Primarily involves querying for data based on the given parameters and matching with SMILES data.
+ * 
+ * Parameters:
+ * - radio: Choice of structure type (either 'structure_inchi' or 'structure_smiles').
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - smiles: The SMILES string to be processed.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * - tanimoto: Threshold for Tanimoto similarity.
+ * 
+ * Expected outputs:
+ * Data that matches the provided criteria.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to processing and fetching the data. Rethrows errors to allow external error handling.
+ */
 async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
   try {
     const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
@@ -194,7 +230,25 @@ async function handleSubSearch(radio, display, smiles, group, max, tanimoto) {
 }
 
 
-// Function to handle 'sim_search' tab
+/**
+ * Function/Method Comments:
+ * An asynchronous function to process and handle similarity searches based on the provided parameters. 
+ * Involves querying for data based on the given parameters and comparing SMILES data for similarity.
+ * 
+ * Parameters:
+ * - radio: Choice of structure type (either 'structure_inchi' or 'structure_smiles').
+ * - display: The format in which data should be displayed ('table' or 'graph').
+ * - smiles: The SMILES string to be processed.
+ * - group: Classification group to filter by.
+ * - max: Maximum number of results to fetch.
+ * - tanimoto: Threshold for Tanimoto similarity.
+ * 
+ * Expected outputs:
+ * Data that matches the provided criteria.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to processing and fetching the data. Rethrows errors to allow external error handling.
+ */
 async function handleSimSearch(radio, display, smiles, group, max, tanimoto) {
   try {
     const queryGroup = group ? `WHERE '${group}' = ANY (array[${taxonomyColumns.join(', ')}])` : '';
