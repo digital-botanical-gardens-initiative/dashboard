@@ -1,4 +1,8 @@
-// exploreRoutes.js
+/**
+ * File/Folder Overview:
+ * exploreRoutes.js - Defines routes and utilities for exploring data.
+ */
+
 // Importing necessary modules
 const express = require('express');
 const router = express.Router();
@@ -19,7 +23,8 @@ const {GetQueryPayload, QueryType} = require('graphdb').query;
 // Middleware to parse URL-encoded bodies
 router.use(express.urlencoded({ extended: true }));
 
-// Defining the columns related to taxonomy
+// Variable Comments:
+// Array defining columns related to taxonomy in the data schema
 const taxonomyColumns = [
   'organism_taxonomy_01domain',
   'organism_taxonomy_02kingdom',
@@ -33,7 +38,16 @@ const taxonomyColumns = [
   'organism_taxonomy_10varietas'
 ];
 
-// Function to retrieve column names from the 'data' table in the 'public' schema
+/**
+ * Function/Method Comments:
+ * An asynchronous function that retrieves column names from the 'data' table in the 'public' schema of the database.
+ * 
+ * Expected outputs:
+ * An array of column names from the specified table and schema.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to database queries. Rethrows errors to allow external error handling.
+ */
 const getTableColumns = async () => {
   try {
     const tableColumns = await db.query(`
@@ -48,7 +62,22 @@ const getTableColumns = async () => {
   }
 };
 
-// Function to execute a Python script with some inputs and return the results
+/**
+ * Function/Method Comments:
+ * An asynchronous function that executes a Python script to process SMILES strings. The function fetches SMILES data from the database and sends it to the Python script for processing.
+ * 
+ * Parameters:
+ * - script: Path to the Python script to execute.
+ * - query: SQL query to fetch SMILES strings from the database.
+ * - smiles: The SMILES string to be processed.
+ * - tanimoto: A threshold for Tanimoto similarity (default is 1).
+ * 
+ * Expected outputs:
+ * An array of SMILES strings that match or are processed according to the criteria defined in the Python script.
+ * 
+ * Error Handling:
+ * Catches and logs errors related to database queries, Python script execution, and data processing. Rethrows errors to allow external error handling.
+ */
 async function sendDataPython(script, query, smiles, tanimoto = 1) {
   try {
     return new Promise(async (resolve, reject) => {
