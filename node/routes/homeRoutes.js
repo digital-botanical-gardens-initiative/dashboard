@@ -174,6 +174,34 @@ async function CountTaxon() {
       throw error;  // Re-throw the error if you want to handle it further up the call stack
     }
   }
+  const axios = require('axios');
+
+  async function getSpeciesCountFromProject(projectSlug) {
+      const baseURL = 'https://api.inaturalist.org/v1/observations/species_counts';
+      
+      try {
+          const response = await axios.get(baseURL, {
+              params: {
+                  project_id: projectSlug,
+                  verifiable: false
+              }
+          });
+          
+          if (response.data && response.data.results) {
+              return response.data.total_results;
+          } else {
+              throw new Error('Failed to fetch data.');
+          }
+      } catch (error) {
+          console.error('Error fetching species count:', error);
+          return null;
+      }
+  }
+  
+  const projectSlug = 'digital-botanical-gardens-initiative';
+  getSpeciesCountFromProject(projectSlug).then(count => {
+      console.log(`Number of species in project ${projectSlug}:`, count);
+  });  
 
 /**
  * Router handler for the home route.

@@ -42,35 +42,7 @@ am5.ready(function() {
 
     // Define the data for the charts
     // Data for the first chart (relating to all taxons)
-    var data = [{
-      category: "Species",
-      value: CollectedSpecies/TotalSpecies * 100,
-      full: 100,
-      columnSettings: {
-        fill: chart.get("colors").getIndex(0)
-      }
-    }, {
-      category: "Genus",
-      value: CollectedGenus/TotalGenus * 100,
-      full: 100,
-      columnSettings: {
-        fill: chart.get("colors").getIndex(1)
-      }
-    }, {
-      category: "Family",
-      value: CollectedFamily/TotalFamily *100,
-      full: 100,
-      columnSettings: {
-        fill: chart.get("colors").getIndex(2)
-      }
-    }, {
-      category: "Order",
-      value: CollectedOrder/TotalOrder * 100,
-      full: 100,
-      columnSettings: {
-        fill: chart.get("colors").getIndex(3)
-      }
-    },
+    var data = [
     {
       category: "Phylum",
       value: CollectedKingdom/TotalKingdom * 100,
@@ -78,36 +50,64 @@ am5.ready(function() {
       columnSettings: {
         fill: chart.get("colors").getIndex(5)
       }
+    },{
+      category: "Order",
+      value: CollectedOrder/TotalOrder * 100,
+      full: 100,
+      columnSettings: {
+        fill: chart.get("colors").getIndex(3)
+      }
+    },{
+      category: "Family",
+      value: CollectedFamily/TotalFamily *100,
+      full: 100,
+      columnSettings: {
+        fill: chart.get("colors").getIndex(2)
+      }
+    },{
+      category: "Genus",
+      value: CollectedGenus/TotalGenus * 100,
+      full: 100,
+      columnSettings: {
+        fill: chart.get("colors").getIndex(1)
+      }
+    },{
+      category: "Species",
+      value: CollectedSpecies/TotalSpecies * 100,
+      full: 100,
+      columnSettings: {
+        fill: chart.get("colors").getIndex(0)
+      }
     }];
 
     // Data for the second chart (specific to plants)
-    var data2 = [{
-      category: "Species",
-      value: CollectedSpecies/TotalPlantSpecies * 100,
+    var data2 = [ {
+      category: "Order",
+      value: CollectedOrder/TotalPlantOrder * 100,
       full: 100,
       columnSettings: {
-        fill: chart2.get("colors").getIndex(0)
+        fill: chart2.get("colors").getIndex(3)
       }
-    }, {
-      category: "Genus",
-      value: CollectedGenus/TotalPlantGenus * 100,
-      full: 100,
-      columnSettings: {
-        fill: chart2.get("colors").getIndex(1)
-      }
-    }, {
+    },{
       category: "Family",
       value: CollectedFamily/TotalPlantFamily *100,
       full: 100,
       columnSettings: {
         fill: chart2.get("colors").getIndex(2)
       }
-    }, {
-      category: "Order",
-      value: CollectedOrder/TotalPlantOrder * 100,
+    },{
+      category: "Genus",
+      value: CollectedGenus/TotalPlantGenus * 100,
       full: 100,
       columnSettings: {
-        fill: chart2.get("colors").getIndex(3)
+        fill: chart2.get("colors").getIndex(1)
+      }
+    },{
+      category: "Species",
+      value: CollectedSpecies/TotalPlantSpecies * 100,
+      full: 100,
+      columnSettings: {
+        fill: chart2.get("colors").getIndex(0)
       }
     }
     ];
