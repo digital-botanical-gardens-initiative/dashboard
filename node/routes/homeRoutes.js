@@ -16,6 +16,8 @@ const {RepositoryClientConfig, RDFRepositoryClient} = require('graphdb').reposit
 const {RDFMimeType} = require('graphdb').http;
 const {SparqlJsonResultParser} = require('graphdb').parser;
 const {GetQueryPayload, QueryType} = require('graphdb').query;
+const axios = require('axios');
+
 const NodeCache = require( "node-cache" );
 const Cache = new NodeCache();
 
@@ -174,34 +176,44 @@ async function CountTaxon() {
       throw error;  // Re-throw the error if you want to handle it further up the call stack
     }
   }
-  const axios = require('axios');
 
-  async function getSpeciesCountFromProject(projectSlug) {
-      const baseURL = 'https://api.inaturalist.org/v1/observations/species_counts';
-      
-      try {
-          const response = await axios.get(baseURL, {
-              params: {
-                  project_id: projectSlug,
-                  verifiable: false
-              }
-          });
-          
-          if (response.data && response.data.results) {
-              return response.data.total_results;
-          } else {
-              throw new Error('Failed to fetch data.');
-          }
-      } catch (error) {
-          console.error('Error fetching species count:', error);
-          return null;
-      }
-  }
   
-  const projectSlug = 'digital-botanical-gardens-initiative';
-  getSpeciesCountFromProject(projectSlug).then(count => {
-      console.log(`Number of species in project ${projectSlug}:`, count);
-  });  
+
+/**
+ * Fetches the species count from a specified project using the iNaturalist API.
+ * 
+ * @async
+ * @param {string} projectSlug - The unique identifier (slug) for the project in the iNaturalist platform.
+ * @returns {number|null} Returns the total species count for the given project. If an error occurs, it returns null.
+ * @throws Will log an error to the console if the API call or data extraction fails.
+ */
+async function getSpeciesCountFromProject(projectSlug) {
+  const baseURL = 'https://api.inaturalist.org/v1/observations/species_counts';
+  
+  try {
+      const response = await axios.get(baseURL, {
+          params: {
+              project_id: projectSlug,
+              verifiable: false
+          }
+      });
+      
+      if (response.data && response.data.results) {
+          return response.data.total_results;
+      } else {
+          throw new Error('Failed to fetch data.');
+      }
+  } catch (error) {
+      console.error('Error fetching species count:', error);
+      return null;
+  }
+}
+
+const projectSlug = 'digital-botanical-gardens-initiative';
+getSpeciesCountFromProject(projectSlug).then(count => {
+  console.log(`Number of species in project ${projectSlug}:`, count);
+});
+
 
 /**
  * Router handler for the home route.

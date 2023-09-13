@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Botanical Garden Initiative</title>
+  <title>DBGI - documentation</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <link rel="stylesheet" type="text/css" href="css/style.css" />
   <link rel="shortcut icon" href="../assets/logo.png">
@@ -18,6 +18,103 @@
     <%- include('./partials/nav.ejs') %>
 
     <h1 class="content">Documentation</h1>
+
+    <div class="content">
+      <h2> Data Sources </h2>
+      <hr>
+      <h3>LOTUS</h3>
+      The LOTUS database is made of 750,000+ referenced structure-organism pairs. <a href="https://doi.org/10.7554/eLife.70780" target="_blank">[1]</a> 
+      The data was extracted from thirty-eight electronic Natural Products resources, enumerated in Rutz et al. <a href="https://doi.org/10.7554/eLife.70780" target="_blank">[1]</a> . The project did therefore not directly collect the samples; instead, only the metadata was gathered from the LOTUS team.
+      Given the substantial variability in the format and contents across each Natural Products resource, a process of standardization was necessitated. This standardization was primarily achieved through scripts adept at harmonizing and categorizing knowledge from each respective source. <a href="https://doi.org/10.7554/eLife.70780" target="_blank">[1]</a> 
+      <br>
+      <br>
+      <h3>DBGI</h3>
+      Data collection for the Digital Botanical Garden Initiative (DBGI) is currently underway
+      at the Botanical Gardens of Fribourg (JBUF) and Neuchâtel (JBN). These two gardens
+      serve as pilot sites before expanding the project to other Swiss and international botanical
+      gardens. They were selected for pragmatic reasons and also due to their unique
+      features, as they each specialize in different types of plants. <a href="https://digital-botanical-gardens-initiative.github.io/dbgi-greenpaper/" target="_blank">[2]</a>
+      Two categories of objects are considered: physical and digital. Physical
+      objects are sampled from the botanical garden and then subjected to Ultra High Performance
+      Liquid Chromatography coupled with High Resolution Mass Spectrometry
+      (UHPLC-HRMS) to derive fragmentation data. Subsequent annotation utilizes standards,
+      experimental libraries, and ISDB - a database of in-silico predicted MS/MS spectra of
+      Natural Products. All procedures involving physical objects, such as sampling, conservation,
+      and extraction, generate metadata which are meticulously collected and stored in
+      various locations. The majority of the sampling data - pictures, species, geolocation, etc.
+      - is stored using the iNaturalist platform. In addition, a PostgreSQL database manages
+      all species, specimens, and experimental metadata and can be accessed via a no-code
+      database (<a href="http://directus.dbgi.org/" target="_blank">Directus</a> [<a href="https://directus.io/" target="_blank">3</a>] - Only accessible when connected to the UNIFR network for now
+      -). Lastly, the mass-spectrometry data is made accessible through the <a href="https://dashboard.gnps2.org/" target="_blank">GNPS-dashboard</a>
+      for visualization and further exploration. [<a href="https://digital-botanical-gardens-initiative.github.io/dbgi-greenpaper/" target="_blank">2</a>, <a href="https://digital-botanical-gardens-initiative.
+      github.io/dendron-dbgi/notes/mpboa8wpvhpygf5fw4o9v11/" target="_blank">4</a>, <a href="https://zenodo.org/record/8137605" target="_blank">5</a>]
+      <br>
+      <br>
+      <h2> Explore </h2>
+      <hr>
+      <h3> Whole Dataset </h3>
+      Select in the dropdown how you want to explore the whole dataset: By Text, By Structure or by direct SPARQL query (only available for DBGI data)
+      <br>
+      <br>
+      <h4 id="by_text"> By text </h4>
+      Enter the text you want to search and select the column to which you want it to match:
+      <img src="assets/documentation/bytext_column.jpg" width="30%" height="30%"/>
+      <br>
+      Then select in which datasource you want to search: DBGI or LOTUS
+      <br>
+      <p style="font-size:12px; color:blueviolet;">(The column are the LOTUS columns, which means that any search on DBGI will not give any result for now. This feature will be added soon.)</p>
+      <p>
+        You can then choose how many results you want to display max. This can be 10, 100, 250, 1000 or 10000.
+        <br>
+        Finally, choose the display option, you can either get the result as a table or a treemap
+      </p>
+      Tabular display:
+      <img src="assets/documentation/table.jpg" width="30%" height="30%"/>
+      Graphical display:
+      <img src="assets/documentation/treemap.png" width="30%" height="30%"/>
+      <br>
+      <br>
+      <br>
+      <h4> By Structure </h4>
+      Draw the structure you want to search in the JSME module. You can check the <a href="https://jsme-editor.github.io/help.html" target="_blank">JSME help page</a> for explanation about all JSME features.  
+      <br>
+      <br>
+      You can again choose the datasource between DBGI and LOTUS, the max displayed result and the display option, either as a table or as a treemap (see <a href="#by_text">the By text search</a> for more informations).
+      <br>
+      Additionally, you can specify a taxon name (e.g. Rhodophyta) to get only results of molecules that have been found in this taxon.
+      <br>
+      <br>
+      You can choose between three type of search:
+      <h5> Exact Match </h5>
+      The Exact match search allows to search for the exact structure in one of the database. You can either search by InChi (International Chemical Identifier) or by SMILES (SimplifiedMolecular-Input Line-Entry System).
+      InChi is recommended as it minimizes the chance of ambiguity during searches due to how it is constructed.
+      <h5> Substructure search </h5>
+      The Substructure search allows you to query for molecules that contain the drawn structure as a substructure.
+      <h5> Similarity search </h5>
+      The Similarity search allows to search for molecules that have a certain percent of similarity with the drawn structure. 
+      <br>
+      You can choose the percentage of similarity you want using the slider: 
+      <img src="assets/documentation/slider.jpg" width="50%" height="50%"/>
+      <br>
+      The similarity is based on the Jaccard-Tanimoto coefficient.
+      <br>
+      <br>
+      <h4>SPARQL</h4>
+      The SPARQL page allows you to directly write your SPARQL query and returns the results as a table. It only queries the DBGI dataset as LOTUS is SQL based.
+      <br>
+      <br>
+      <h3>Molecules</h3>
+      On this page, you can search for a molecule in LOTUS by simply writing the name you're searching for.
+      <br>
+      To help, the 12 most found molecules are displayed at the bottom of the page.
+      <br>
+      <br>
+      <h3>Organisms</h3>
+      On this page, you can search for an organism in LOTUS by simply writing the name you're searching for.
+      <br>
+      To help, the 12 most found organisms are displayed at the bottom of the page.
+    </div>
+
     
 </body>
 </html>
