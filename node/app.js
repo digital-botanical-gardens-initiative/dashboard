@@ -63,6 +63,21 @@ app.get('/docu', (req,res) => {
 });
 
 /**
+ * Function/Method Comments:
+ * The function below renders a 'exampleQuery' page when the '/exampleQuery' route is hit.
+ * Params:
+ * - req: The request object containing request information.
+ * - res: The response object used to send back the required response.
+ * Expected outputs:
+ * - Renders the 'exampleQuery' view.
+ */
+app.get('/exampleQuery', (req,res) => {
+    res.render('exampleQuery');
+});
+
+
+
+/**
  * Error Handling:
  * If none of the routes match, this function sends a 404 page.
  */

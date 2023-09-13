@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Document metadata -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DBGI - Queries examples</title>
+  <!-- External CSS stylesheets -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="../css/style.css" />
+  <link rel="shortcut icon" href="../assets/logo.png">
+  <!-- External JavaScript libraries -->
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="../app.js" defer></script>
+</head>
+<body>
+    <!-- Include navigation component -->
+    <%- include('./partials/nav.ejs') %>
+    
+    <div class="content">
+     
+        <table>
+            <tr>
+              <th>Query description</th>
+              <th>Query</th>
+            </tr>
+            <tr>
+              <td>What are the ENPKG classes?</td>
+              <td><a href="https://dbgikg.commons-lab.org/sparql?name=get%20enpkg%20classes&infer=true&sameAs=true&query=PREFIX%20rdfs:%20%3Chttp:%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E%0Aselect%20distinct%20%3Fx%20where%20%7B%20%0A%09%3Fs%20a%20%3Fx%20.%0A%20%20%20%20filter(strstarts(str(%3Fx),%20%22https:%2F%2Fenpkg%22))%0A%7D%20limit%20100%20%0A" target="_blank">SPARQL</a></td>
+            </tr>
+            <tr>
+              <td>Which species served as the source for the sample?</td>
+              <td><a href="https://dbgikg.commons-lab.org/sparql?name=dbgi_plants&infer=true&sameAs=true&query=PREFIX%20enpkg:%20%3Chttps:%2F%2Fenpkg.commons-lab.org%2Fkg%2F%3E%0Aselect%20%3Fdbgi_sample%20%3Fsubmitted_taxon%20where%20%7B%20%0A%09%3Fextract%20enpkg:has_lab_process%20%3Fdbgi_sample%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20enpkg:submitted_taxon%20%3Fsubmitted_taxon%20.%0A%7D%0A" target="_blank">SPARQL</a></td>
+            </tr>
+            <tr>
+                <td>How many peaks are detected within the
+                    mass spectrum of each respective sample?</td>
+                <td><a href="https://dbgikg.commons-lab.org/sparql?name=peak_count_per_sample&infer=true&sameAs=true&query=PREFIX%20enpkg:%20%3Chttps:%2F%2Fenpkg.commons-lab.org%2Fkg%2F%3E%0APREFIX%20rdf:%20%3Chttp:%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0A%0ASELECT%20%3Fdbgi_sample%20%3FnumPeaks%0AWHERE%20%7B%0A%20%20%7B%0A%20%20%20%20SELECT%20%3Fdbgi_sample%20(COUNT(%3Fpeak)%20AS%20%3FnumPeaks)%0A%20%20%20%20WHERE%20%7B%0A%20%20%20%20%3Fdbgi_sample%20enpkg:has_LCMS%20%3FLCMS_analysis%20.%0A%20%20%20%20%3FLCMS_analysis%20enpkg:has_lcms_feature_list%20%3FLCMSFeatureList%20.%20%0A%20%20%20%20%3FLCMSFeatureList%20enpkg:has_lcms_feature%20%3FLCMSFeature%20.%0A%20%20%20%20%3FLCMSFeature%20enpkg:has_spec2vec_doc%20%3Fspec2vec_doc%20.%0A%20%20%20%20%3Fspec2vec_doc%20enpkg:has_spec2vec_peak%20%3Fpeak.%0A%20%20%20%20%7D%0A%20%20%20%20GROUP%20BY%20%3Fdbgi_sample%0A%20%20%7D%0A%7D%0AGROUP%20BY%20%3Fdbgi_sample%20%3FnumPeaks" target="_blank">SPARQL</a></td>
+            </tr>
+            <tr>
+                <td>What quantity of samples exhibit a particular
+                    peak? The analysis should be
+                    constrained to only those instances with
+                    more than five samples.</td>
+                <td><a href="https://dbgikg.commons-lab.org/sparql?name=sample_count_per_peak&infer=true&sameAs=true&query=PREFIX%20enpkg:%20%3Chttps:%2F%2Fenpkg.commons-lab.org%2Fkg%2F%3E%0APREFIX%20rdf:%20%3Chttp:%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0A%0ASELECT%20%3Fpeak%20(COUNT(DISTINCT%20%3Fdbgi_sample)%20AS%20%3FnumSamples)%0AWHERE%20%7B%0A%20%20%3Fdbgi_sample%20enpkg:has_LCMS%20%3FLCMS_analysis%20.%0A%20%20%3FLCMS_analysis%20enpkg:has_lcms_feature_list%20%3FLCMSFeatureList%20.%20%0A%20%20%3FLCMSFeatureList%20enpkg:has_lcms_feature%20%3FLCMSFeature%20.%0A%20%20%3FLCMSFeature%20enpkg:has_spec2vec_doc%20%3Fspec2vec_doc%20.%0A%20%20%3Fspec2vec_doc%20enpkg:has_spec2vec_peak%20%3Fpeak.%0A%7D%0AGROUP%20BY%20%3Fpeak%0AHAVING%20(COUNT(DISTINCT%20%3Fdbgi_sample)%20%3E%205)%0AORDER%20BY%20DESC(%3FnumSamples)%0A" target="_blank">SPARQL</a></td>
+            </tr>
+            <tr>
+                <td>What is the count of unique kingdoms,
+                    orders, families, genera, and species represented
+                    within the DBGI Knowledge
+                    Graph? This question necessitates a federated
+                    query that integrates data from
+                    ENPKG and Wikidata to generate the results.</td>
+                <td>
+                    <a href="https://dbgikg.commons-lab.org/sparql?name=count_features_by_sample_annotated_by_canopus_as_aspidosperma&infer=true&sameAs=true&query=PREFIX%20enpkg:%20%3Chttps:%2F%2Fenpkg.commons-lab.org%2Fkg%2F%3E%0APREFIX%20enpkgmodule:%20%3Chttps:%2F%2Fenpkg.commons-lab.org%2Fmodule%2F%3E%0APREFIX%20rdf:%20%3Chttp:%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%3E%0APREFIX%20wdt:%20%3Chttp:%2F%2Fwww.wikidata.org%2Fprop%2Fdirect%2F%3E%0APREFIX%20wd:%20%3Chttp:%2F%2Fwww.wikidata.org%2Fentity%2F%3E%0A%0ASELECT%20%0A(COUNT(DISTINCT%20%3Fspecies_name)%20AS%20%3Fcount_of_species)%0A(COUNT(DISTINCT%20%3Fgenus_name)%20AS%20%3Fcount_of_genus)%0A(COUNT(DISTINCT%20%3Ffamily_name)%20AS%20%3Fcount_of_families)%0A(COUNT(DISTINCT%20%3Forder_name)%20AS%20%3Fcount_of_orders)%0A(COUNT(DISTINCT%20%3Fkingdom_name)%20AS%20%3Fcount_of_kingdoms)%0AWHERE%0A%7B%20%20%0A%20%20%20%20%3Fmaterial%20enpkg:has_lab_process%20%3Fextract%20.%0A%20%20%20%20%3Fmaterial%20enpkg:has_wd_id%20%3Fwd_sp%20.%0A%20%20%20%20OPTIONAL%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20SERVICE%20%3Chttps:%2F%2Fquery.wikidata.org%2Fsparql%3E%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Fwd_sp%20wdt:P225%20%3Fspecies_name%20.%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Ffamily%20wdt:P31%20wd:Q16521%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20wdt:P105%20wd:Q35409%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20wdt:P225%20%3Ffamily_name%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5Ewdt:P171*%20%3Fwd_sp%20.%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Fgenus%20wdt:P31%20wd:Q16521%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20wdt:P105%20wd:Q34740%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20wdt:P225%20%3Fgenus_name%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%5Ewdt:P171*%20%3Fwd_sp%20%20.%0A%20%20%20%20%20%20%20%20%20%20%20%20%3Fkingdom%20wdt:P31%20wd:Q16521%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20wdt:P105%20wd:Q36732%20;%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%25" target="_blank">SPARQL</a>
+                </td>
+            </tr>
+          </table> 
+
+    </div>
+
+    
+</body>
+</html>
